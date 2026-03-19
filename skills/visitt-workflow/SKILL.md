@@ -569,6 +569,40 @@ window.fetch = function(...args) {
 // After page navigates and redirects, read: JSON.parse(localStorage.getItem('_gql_captured'))
 ```
 
+### Tenants & Contacts Navigation — verified 2026-03-20
+
+**URL patterns:**
+- Tenants list: `/tenants` (tab `#tenants`)
+- Global Contacts: `/tenants#contacts`
+- Tenant detail: `/tenant/<tenantId>?activeSideMenuItem=<tab>`
+  - Tabs: `overview`, `contacts`, `locations` (Spaces tab), `documents`, `billing`
+- My Property / Building: `/building/current` → redirects to `/building/<buildingId>`
+  - Sub-tabs: `#overview`, `#floors`, `#spaces`, `#equipment`
+
+**Tenant Spaces (Locations) flow:**
+- "Spaces" tab in tenant detail uses URL param `activeSideMenuItem=locations` (NOT `spaces`)
+- Two sub-sections: **Leased spaces** (exclusive use) and **Authorized spaces** (work order rights)
+- Adding spaces: click "Leased spaces" or "Authorized spaces" button → opens Ariakit modal with SelectCombobox → pick space → Submit
+- Mutation is `setTenant` (replaces entire tenant) — always include existing contacts + locations when updating
+
+**Ariakit SelectCombobox component (different from react-select):**
+```javascript
+// Selector: button.SelectComboboxValue (NOT .Select__control)
+const comboBtn = document.querySelector('.SelectComboboxValue');
+comboBtn.click();
+// Options use role="option" or class="SelectItem" / "ComboboxItem"
+const opts = document.querySelectorAll('[role="option"], [class*="SelectItem"], [class*="ComboboxItem"]');
+opts[0].click(); // pick first option
+```
+
+**My Property building page (`/building/<buildingId>`):**
+- Sidebar "My property" link → `/building/current` → auto-redirects to current building
+- Building queries: `buildingStructure({buildingId})` + `fetchBuildingFloors` + `sitesSearch`
+- Space creation button: "Create space" → modal with Name, Type, Location → fires `insertSite`
+- Equipment creation button: "Create equipment" → modal with Name, Type, Location, Notes, "Show advance details" → fires `insertSite` with `modelType: "equipment"`
+- Both are the SAME mutation (`insertSite`) with different `modelType`
+- `GetCompanySiteTypes({companyId})` fetches custom space/equipment type categories
+
 ### Bulk Category Operations (discovered 2026-03-20)
 Full flow for replacing ALL categories across N properties:
 1. Query all categories: `allCategories(companyId: ID) { _id name }`
@@ -595,3 +629,6 @@ Timing verified: 240 unassigns + 8 deletes + 600 creates = ~75 seconds total on 
 8. **read_network_requests misses pre-call requests**: The tool only captures requests made AFTER first call. If creation fires before tracking starts, requests are lost. Use `localStorage` fetch interceptor instead — it survives SPA navigation.
 9. **Inspections URL is /assignments not /inspections**: Navigation to `/inspections` or `/assignment` returns 404. Correct path: `/assignments#manageVisits` (all templates) or `/assignments#openVisits` (active).
 10. **`type` tool doesn't work on task textarea**: Use native setter + dispatch events pattern instead.
+11. **Tenant "Spaces" tab uses `activeSideMenuItem=locations`**: Despite the UI button saying "Spaces", the internal URL param is `locations`. Navigating to `?activeSideMenuItem=spaces` shows a blank tab.
+12. **`setTenant` replaces entire tenant data**: When updating locations OR contacts, you must include the full existing set of both in the mutation. Sending only the new item will delete everything else.
+13. **My Property URL is `/building/current` not `/my-property`**: `/my-property` returns 404. The sidebar link points to `/building/current` which redirects to `/building/<buildingId>`.

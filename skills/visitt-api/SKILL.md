@@ -158,7 +158,7 @@ mutation changeSitesLocation($buildingId: String!, $parentSiteId: String!, $site
 Performance: 49 entities created in 6.3s + floor assignment in 3.2s = ~10s total.
 
 ### setTenant
-Creates or updates a tenant.
+Creates or updates a tenant. Also used to assign spaces (leased/authorized) and contacts to a tenant.
 ```graphql
 mutation setTenant($input: TenantInput!) {
   setTenant(input: $input) {
@@ -167,20 +167,54 @@ mutation setTenant($input: TenantInput!) {
   }
 }
 ```
-**Variables (create):**
+**Variables (create minimal):**
 ```json
 {
   "input": {
     "companyId": "PROPERTY_ID",
     "name": "Tenant Company Name",
-    "locations": []
+    "locations": [],
+    "contacts": []
   }
 }
 ```
-Note: `setTenant` is used for BOTH create and update. Include `_id` field to update existing.
+**Variables (full update — verified 2026-03-20):**
+```json
+{
+  "input": {
+    "tenantId": "TENANT_ID",
+    "companyId": "PROPERTY_ID",
+    "name": "Cyberdyne Systems",
+    "tenantCode": "",
+    "billingCompanyName": "",
+    "billingContactName": "",
+    "billingAddress": "",
+    "isTaxExempt": false,
+    "locations": [
+      {
+        "buildingId": "BUILDING_ID",
+        "siteId": "SITE_ID",
+        "isLeased": true
+      }
+    ],
+    "contacts": [
+      {
+        "_id": "CONTACT_ID",
+        "roles": []
+      }
+    ]
+  }
+}
+```
+**Key notes:**
+- `setTenant` is used for BOTH create and update. Include `tenantId` field to update existing.
+- `locations[].isLeased: true` → Leased space (exclusive use). `isLeased: false` → Authorized space (work order creation rights only).
+- `contacts[].roles` → admin roles for the contact within this tenant. Empty array = regular contact.
+- **IMPORTANT**: `setTenant` replaces the ENTIRE tenant. When updating locations, include ALL existing contacts in the `contacts` array, and vice versa — omitting them removes them.
+- Space options are fetched via `allSites` query: `{input: {companyId: "PROPERTY_ID"}}`
 
 ### addContacts
-Creates one or more contacts. Contacts are created at the property level and can be linked to tenants separately.
+Creates one or more contacts. Can link directly to a tenant during creation. — verified 2026-03-20
 ```graphql
 mutation addContacts($input: [ContactInput!]!) {
   addContacts(input: $input) {
@@ -191,24 +225,35 @@ mutation addContacts($input: [ContactInput!]!) {
   }
 }
 ```
-**Variables:**
+**Variables (full — verified 2026-03-20):**
 ```json
 {
   "input": [
     {
-      "name": "John Doe",
-      "email": "john@example.com",
-      "phone": "+972501234567",
       "companyId": "PROPERTY_ID",
-      "locations": []
+      "name": "John Connor",
+      "phone": "+972501234567",
+      "email": "john@example.com",
+      "extraInfo": "",
+      "tenants": [
+        {
+          "_id": "TENANT_ID",
+          "isAdmin": false
+        }
+      ],
+      "locations": [],
+      "supervisedContactIds": []
     }
   ]
 }
 ```
-**Important:** `locations` is required (`[ContactLocationInput!]!`) — use empty array `[]` if no location assignment.
-`tenantId` is NOT a direct field on ContactInput. Tenant assignment uses the `locations` array with `ContactLocationInput` (exact fields TBD — need to capture from UI).
-`roles` is NOT a valid field on ContactInput either.
-Batch creation: pass multiple objects in the `input` array to create several contacts at once.
+**Key notes:**
+- `tenants[].isAdmin: true` makes the contact an admin for that tenant (can manage work orders in Visitt+)
+- `locations` — `[ContactLocationInput]` — optional building/space-level assignment, use `[]` if not needed
+- `supervisedContactIds` — contacts this person supervises, use `[]` if not needed
+- Batch: pass multiple objects in the `input` array to create many contacts at once
+- After creation, if invite toggle is ON, a `createBroadcast` fires automatically with welcome email template `"not_invited_to_portal_contacts"`
+- Global contacts URL: `/tenants#contacts`; per-tenant contacts: `/tenant/<id>?activeSideMenuItem=contacts`
 
 ### Other useful mutations discovered in code:
 - `updateBuilding` — UpdateBuildingInput!
@@ -222,7 +267,143 @@ Batch creation: pass multiple objects in the `input` array to create several con
 - `deleteTenant` — tenantId: String!
 - `makeSpacesLeasable` (updateSitesModelType) — siteIds: [String]!, modelType: String!
 
+### insertSite — equipment variant (verified 2026-03-20)
+Same `insertSite` mutation, but with `modelType: "equipment"` and extended equipment fields:
+```json
+{
+  "input": {
+    "modelType": "equipment",
+    "name": "Main HVAC Unit",
+    "buildingId": "BUILDING_ID",
+    "parentSiteId": "FLOOR_OR_SPACE_ID",
+    "serialNumber": "",
+    "notes": "",
+    "qrCode": "",
+    "type": "",
+    "equipmentData": {
+      "model": "",
+      "manufacturer": "",
+      "installationDate": null,
+      "condition": null,
+      "lifeSpanInYears": null,
+      "replacementCost": null,
+      "installationCost": null,
+      "warrantyExpirationDate": null
+    }
+  }
+}
+```
+Frontend operation name for equipment is `insertSite` (same as spaces). Use `changeSitesLocation` if you need to assign to a floor.
+
 ## Internal API — Key Queries
+
+### tenants (list all tenants for a property) — verified 2026-03-20
+```graphql
+query tenants($input: TenantsSearchInput!) {
+  tenants(input: $input) {
+    _id
+    name
+    status
+    isActive
+    tenantCode
+  }
+}
+```
+**Variables:** `{ "input": { "companyId": "PROPERTY_ID" } }`
+
+### tenant (single tenant detail) — verified 2026-03-20
+```graphql
+query tenant($tenantId: String!) {
+  tenant(tenantId: $tenantId) {
+    _id
+    name
+    tenantCode
+    status
+    companyId
+    isActive
+    admins { _id name email phone }
+    contacts { _id name email phone }
+    locations { buildingId siteId isLeased }
+  }
+}
+```
+
+### contacts (list contacts with filtering) — verified 2026-03-20
+```graphql
+query contacts($input: ContactSearchInput!, $skip: Int!, $limit: Int!) {
+  contacts(input: $input, skip: $skip, limit: $limit) {
+    contacts { _id name phone email isArchived }
+    hasNext
+    totalCount
+  }
+}
+```
+**Variables:**
+```json
+{
+  "skip": 0,
+  "limit": 40,
+  "input": {
+    "companyId": "PROPERTY_ID",
+    "status": null,
+    "inviteStatus": [],
+    "search": "",
+    "isArchived": false
+  }
+}
+```
+Filter by tenant: add `"tenantId": "TENANT_ID"` to the input object.
+
+### sitesSearch (paginated space search with filtering) — verified 2026-03-20
+```graphql
+query sitesSearch($input: SitesSearchInput, $skip: Int!, $limit: Int!, $sortBy: String, $sortDirection: String) {
+  sitesSearch(input: $input, skip: $skip, limit: $limit, sortBy: $sortBy, sortDirection: $sortDirection) {
+    _id
+    name
+    modelType
+    buildingId
+    buildingName
+    parentBranches { _id name }
+    tenant { _id }
+  }
+}
+```
+**Variables:**
+```json
+{
+  "skip": 0,
+  "limit": 50,
+  "sortBy": "parentBranches",
+  "sortDirection": "ASC",
+  "input": {
+    "modelType": ["site", "leasable_site"],
+    "companyId": "PROPERTY_ID",
+    "buildingId": "BUILDING_ID",
+    "parentBranchIds": null,
+    "type": [],
+    "search": "",
+    "groupByBuilding": false
+  }
+}
+```
+
+### allSites (flat list of all spaces for a property) — verified 2026-03-20
+```graphql
+query allSites($input: SitesSearchInput) {
+  allSites(input: $input) {
+    _id
+    name
+    buildingId
+    buildingName
+    type
+    modelType
+    parentBranches { _id name }
+    tenant { _id }
+  }
+}
+```
+**Variables:** `{ "input": { "companyId": "PROPERTY_ID" } }` or add `"buildingId"` for single building.
+Used to populate space selectors in tenant locations, inspections, etc.
 
 ### buildings (get all buildings for a property)
 ```graphql
