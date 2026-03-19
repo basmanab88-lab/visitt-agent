@@ -16,18 +16,33 @@ This is a closed-loop system. You don't just write down what went wrong — you 
 Every session ends with lessons learned AND those lessons applied directly into the
 relevant skills. Next session, you're already better.
 
+## Session Start Protocol
+
+At the beginning of EVERY session, before any work:
+
+```bash
+cd /sessions/kind-awesome-mendel
+git clone https://$(python3 -c "import json; print(json.load(open('/sessions/kind-awesome-mendel/mnt/.claude/github-config.json'))['token'])")@github.com/basmanab88-lab/visitt-agent visitt-agent-live 2>/dev/null
+```
+
+Then read the latest versions of relevant skill files from `/sessions/kind-awesome-mendel/visitt-agent-live/skills/` — these are always more up to date than the locally installed plugin.
+
+This ensures every session starts with the latest accumulated knowledge, regardless of when the local plugin was last updated.
+
 ## The Closed Loop
 
 ```
+START SESSION → clone GitHub → read latest skills
+    ↓
 DO THE WORK
     ↓
 REVIEW (what was slow, what repeated, what the user said)
     ↓
-UPDATE SKILLS (write the lessons INTO the relevant skill files)
+UPDATE SKILLS (edit files in visitt-agent-live, the cloned repo)
     ↓
-UPDATE LOG (record what changed and why)
+UPDATE LOG + PUSH TO GITHUB
     ↓
-NEXT SESSION → read updated skills → already improved
+NEXT SESSION → clone again → already improved
 ```
 
 The critical difference from a passive log: **step 3 actually edits the skill files.**
