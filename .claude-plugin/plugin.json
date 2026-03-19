@@ -1,9 +1,10 @@
 {
   "name": "visitt-agent",
-  "version": "0.1.0",
-  "description": "AI automation agent for the Visitt property management platform. Automates building deployment, space management, and bulk operations via GraphQL API and browser automation.",
+  "version": "0.4.0",
+  "description": "AI automation agent for Visitt property management — deploy buildings, automations, and configurations via GraphQL API with visual previews and continuous self-optimization",
   "author": {
-    "name": "Basman"
+    "name": "Basman Abu Gazi"
   },
+  "keywords": ["visitt", "property-management", "automation", "graphql", "self-learning"],
   "hooks": "./hooks/hooks.json"
 }

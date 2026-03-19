@@ -40,46 +40,78 @@ next time you (or any Claude using that skill) will do it right automatically.
 - **Automatically** at session end when user says "תשמור מה שלמדנו"
 - **On demand** when user says "תתייעל" or "self-review"
 - **Reactively** when user says "זה לקח יותר מדי זמן" or "אתה חוזר על עצמך"
-- **Mid-task** when you detect inefficiency while working
+- **Mid-task** when you detect inefficiency while working (see below)
+
+The user should never need to ask you to do this. It's built into the session lifecycle.
 
 ## Mid-Task Optimization (Real-Time)
 
 Don't wait until session end to optimize. If you notice inefficiency WHILE WORKING, act immediately:
 
 ### Trigger conditions:
-- You've repeated the same action 3+ times
+- You've repeated the same action 3+ times (e.g., opening the same dialog, clicking the same dropdown)
 - A single sub-task is taking more than 5 minutes when it should take 1-2
 - You're using the wrong tool for the job (UI for bulk work, manual steps for automatable tasks)
+- You're about to do something you already know is slow from a previous rule
 
 ### What to do:
 1. **Stop** — Don't finish the inefficient approach just because you started it
-2. **Recalculate** — What's the faster path? API? Import? Different UI flow?
-3. **Reprioritize** — If spending 10 minutes on low-value work, shift to high-value work instead
-4. **Continue** — Execute the optimized approach
+2. **Recalculate** — What's the faster path? API? Import? Different UI flow? Skip non-essential items?
+3. **Reprioritize** — If you're spending 10 minutes on low-value work (extra spaces), shift to high-value work (tenants, contacts) instead
+4. **Continue** — Execute the optimized approach without asking permission (unless guardrails require it)
+
+### Example:
+You're creating spaces one-by-one through the UI. After the 3rd space on the 3rd floor, you realize you've been doing this for 15 minutes. **Stop.** The remaining floors need only 2-3 spaces each for the demo — or better yet, use the API. Don't finish all 6 floors via UI just because you started that way.
+
+### Key principle:
+Optimize in both the **long run** (skill updates for future sessions) and the **short run** (mid-task course corrections for THIS session). The user expects progress NOW, not just promises of future improvement.
 
 ## Step 1: Analyze (30 seconds of thinking)
 
+Walk through these questions quickly. Be specific, not generic.
+
 **What was the task?** One sentence.
 
-**What was slow?** Count things — "retried the dropdown 4 times" is useful, "the dropdown was annoying" is not.
+**What was slow?** Look for: wasted clicks, wrong approach (UI when API was better),
+repeated navigation, dialog wrestling, unnecessary waiting. Count things — "retried
+the dropdown 4 times" is useful, "the dropdown was annoying" is not.
 
-**What patterns repeated?** Actions done 3+ times the same way are automation candidates.
+**What patterns repeated?** Actions you did 3+ times the same way are automation
+candidates. Same form filled repeatedly, same navigation path, same error fixed.
 
-**What did the user say?** Even vague feedback matters. "מעולה!" means keep doing that. "עצור" means wrong direction.
+**What did the user say?** Even vague feedback matters. "מעולה!" means keep doing
+that thing. "עצור" means you were going in the wrong direction.
 
-## Step 2: Update the Skills
+## Step 2: Update the Skills (the important part)
 
-For each lesson learned, find the right skill and edit it directly.
+This is where the loop closes. For each lesson learned, find the right skill and
+edit it directly.
+
+### MANDATORY: Always update `system-learning`
+
+Every session that involves browser automation, API work, or interacting with any web system MUST update `system-learning/SKILL.md`. This is non-negotiable — it's how we build a reusable engine that works across ALL systems, not just Visitt.
+
+What goes into system-learning (the "System-Specific Discoveries" section and general patterns):
+- New API patterns discovered (e.g., a mutation that needs an extra param you wouldn't guess)
+- Fetch interceptor captures — what you caught and how it helped
+- Two-phase creation patterns (create then assign)
+- Gotchas that would apply to other systems too (e.g., SPA navigation wiping state)
+- Performance benchmarks for bulk operations
+- Any technique that's NOT specific to one system but was learned while working on one
+
+If you're unsure whether something belongs in system-learning vs a system-specific skill — put it in both. Better to duplicate a lesson than to lose it.
 
 ### Where to write each type of lesson:
 
 | Lesson type | Target skill | Where in the skill |
 |---|---|---|
-| UI technique (click pattern, navigation shortcut) | `visitt-workflow` | Relevant section |
-| "Use API instead of UI for X" | `visitt-api` | Relevant mutation section |
-| Safety-related (don't skip confirmation) | `visitt-workflow` | Deployment Flow section |
-| How to ask the user better questions | `self-review` (this file) | Communication Optimization section |
-| General efficiency | `self-review` (this file) | General Rules section |
+| **Cross-system technique (API, automation, browser)** | **`system-learning`** | **"System-Specific Discoveries" or general patterns** |
+| UI technique (click pattern, navigation shortcut) | `visitt-workflow` | "Learned Techniques" section |
+| "Use API instead of UI for X" | `visitt-api` | Add a note in the relevant query/mutation section |
+| "Use CSV import for bulk X" | `visitt-import` | Add to the relevant entity template |
+| Safety-related (don't skip confirmation) | `visitt-guardrails` | Add to rules |
+| How to ask the user better questions | `self-review` (this file) | "Communication Optimization" section below |
+| General efficiency (screenshots, find tool usage) | `self-review` (this file) | "General Rules" section below |
 
 ### How to edit a skill safely:
 
@@ -87,11 +119,37 @@ For each lesson learned, find the right skill and edit it directly.
 2. Find the right section (or create one if needed)
 3. Add your lesson as a concise, actionable instruction
 4. Don't remove existing instructions — add to them
-5. Don't contradict existing rules
+5. Don't contradict existing rules. If a skill says "ask the user before choosing
+   UI vs API", keep asking. But you CAN optimize HOW you ask (e.g., "present both
+   options with a recommendation instead of an open question")
+
+### Example of a skill update:
+
+**Lesson learned**: Creating spaces one-by-one through the UI took 25 minutes for
+15 spaces. API would take 2 minutes.
+
+**Action**: Open `visitt-workflow/SKILL.md`, find the section about space creation,
+and add:
+```
+> **Optimization note (2026-03-17)**: For 5+ spaces, use the GraphQL API
+> (see visitt-api skill, createSpace mutation) instead of the UI dialog.
+> UI is fine for 1-4 spaces. The Create Space dialog's location picker
+> is unreliable — if you must use UI, navigate to the target floor first.
+```
+
+### End-of-step checklist (do NOT skip)
+
+Before moving to Step 3, verify you updated ALL relevant skills. Run through this list:
+
+- [ ] **`system-learning`** — Did you add cross-system techniques? (REQUIRED if session involved any browser/API work)
+- [ ] **System-specific skill** (e.g., `visitt-api`, `visitt-workflow`) — Did you update the relevant system skill?
+- [ ] **`self-review`** — Did you discover a new efficiency rule or communication pattern?
+
+If you skipped `system-learning`, go back and update it now. The whole point of that skill is to accumulate knowledge that transfers to new systems — every session where we automate something teaches us something reusable.
 
 ## Step 3: Update the Log
 
-Write a brief entry to an optimization log:
+After updating skills, write a brief entry to `memory/optimization-log.md`:
 
 ```markdown
 ## [DATE] — [TASK SUMMARY]
@@ -101,66 +159,65 @@ Write a brief entry to an optimization log:
 **User feedback**: [quotes or paraphrases]
 ```
 
+Keep log entries short. The real value lives in the updated skills, not the log.
+The log is just an audit trail.
+
 ## Communication Optimization
 
-- When presenting options, give a recommendation with reasoning rather than an open-ended question
+This section is about optimizing how you interact with the user — not just what
+you do, but how you present choices, ask questions, and show results.
+
+### Current rules:
+- When presenting options (e.g., UI vs API), give a recommendation with reasoning
+  rather than an open-ended question. "I'd use the API here because there are 12
+  items — OK?" is better than "Do you want me to use UI or API?"
 - When asking for confirmation, be concise. Show what you'll do, not why.
-- When the user gives vague feedback, ask ONE specific follow-up, not three.
-- Combine related operations into one approval question
+- When the user gives vague feedback ("זה איטי"), ask ONE specific follow-up,
+  not three.
+- Combine related operations. Instead of "should I add floors?" then "should I add
+  spaces?" then "should I add equipment?", say "I'll set up the full building
+  structure — floors, spaces, and equipment. OK?"
+
+(Add new rules here as they're discovered in sessions)
 
 ## General Rules
 
-1. **Navigate to target context before opening create dialogs** — Forms pre-fill based on where you are.
-2. **Use `find` tool instead of scrolling** — Saves 3-5 actions per search.
-3. **Enable "Create another" before filling fields** — Multi-create toggles sometimes reset.
-4. **Bulk threshold: 5+ items → switch to API or import**
-5. **Screenshot strategically** — After state changes, not after typing or scrolling.
+These are efficiency rules that apply across all tasks. They accumulate over time.
+
+1. **Navigate to target context before opening create dialogs** — Forms pre-fill
+   location/parent fields based on where you are. Going to the right page first
+   saves dropdown wrestling. (2026-03-17)
+
+2. **Use `find` tool instead of scrolling** — When looking for a button or element,
+   use the find tool with a description rather than scrolling and scanning visually.
+   Scrolling wastes 3-5 actions per search. (2026-03-17)
+
+3. **Enable "Create another" before filling fields** — Multi-create toggles sometimes
+   reset. Click them first. (2026-03-17)
+
+4. **Bulk threshold: 5+ items → switch to API or import** — If you need to create
+   5 or more entities of the same type, stop using the UI. Check if the API or CSV
+   import can handle it. (2026-03-17)
+
+5. **Screenshot strategically** — Take a screenshot after actions that change state
+   (form submit, navigation, dialog open). Skip screenshots after typing, scrolling,
+   or clicking within the same view. (2026-03-17)
+
+(Add new rules here as they're discovered in sessions)
 
 ## What NOT to Optimize Away
 
+Some things look slow but exist for safety:
 - **Dry-run previews** — They prevent mistakes on production data.
-- **User confirmations** — Optimize the question format, not the act of asking.
-- **Verification screenshots** — After destructive actions, always verify.
+- **User confirmations** — When guardrails require confirmation, that's by design.
+  Optimize the question format, not the act of asking.
+- **Verification screenshots** — After a destructive or irreversible action, always
+  verify. The 2-second cost prevents 20-minute rollbacks.
 
-## Step 4: GitHub Backup
+## For the User
 
-After updating skills and the log, back up the plugin to GitHub.
-
-Config is stored at: `/sessions/kind-awesome-mendel/mnt/.claude/github-config.json`
-
-### When to back up:
-- When user says "תשמור מה שלמדנו" or "גיבוי" or "push to GitHub"
-- At end of a session where skills were updated
-- **Not** after every small task — only when meaningful changes were made
-
-### How to back up:
-
-```bash
-cd /sessions/kind-awesome-mendel
-CONFIG=$(cat /sessions/kind-awesome-mendel/mnt/.claude/github-config.json)
-TOKEN=$(python3 -c "import json; c=json.load(open('/sessions/kind-awesome-mendel/mnt/.claude/github-config.json')); print(c['token'])")
-REPO=$(python3 -c "import json; c=json.load(open('/sessions/kind-awesome-mendel/mnt/.claude/github-config.json')); print(c['repo_url'].replace('https://',''))")
-BRANCH=$(python3 -c "import json; c=json.load(open('/sessions/kind-awesome-mendel/mnt/.claude/github-config.json')); print(c['branch'])")
-
-git clone https://$TOKEN@$REPO visitt-backup-tmp
-cd visitt-backup-tmp
-cp -r /sessions/kind-awesome-mendel/mnt/.local-plugins/marketplaces/local-desktop-app-uploads/visitt-agent/. .
-git config user.email "basman@visitt.io"
-git config user.name "Visitt Agent"
-git add -A
-git commit -m "session update $(date +%Y-%m-%d): SUMMARY_HERE"
-git push origin $BRANCH
-cd .. && rm -rf visitt-backup-tmp
-```
-
-Replace `SUMMARY_HERE` with a factual 1-line description of what changed.
-
-### Commit message rules:
-- Format: `session update YYYY-MM-DD: [what changed]`
-- Factual only: "added createSpace via API note to visitt-api skill"
-- NOT: "improved agent" / "enhanced workflow" / "better performance"
-- Multiple skills changed → list them: "updated visitt-workflow, system-learning"
-
-### Never commit:
-- `github-config.json` (contains token — add to .gitignore if needed)
-- Temp files or screenshots
+You don't need to do anything special. Just work with Claude normally and:
+- If something feels slow, say so. Even "זה איטי" is enough.
+- At session end, say "תשמור מה שלמדנו" — the review runs automatically.
+- Say "מעולה!" when something works well — that's data too.
+- You'll never need to remind Claude to optimize. It just happens.

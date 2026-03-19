@@ -1,59 +1,62 @@
-# Visitt Agent Plugin
+# Visitt Agent Plugin v0.4.0
 
-AI automation agent for the Visitt property management platform. Automates building deployment, space management, and bulk operations.
+AI automation agent for Visitt property management (app.visitt.io / staging.visitt.io).
 
-## What This Plugin Does
+## What it does
 
-- **Building Deployment**: Parse Excel implementation sheets → visualize building structure → deploy via GraphQL API
-- **Browser Automation**: Automate repetitive UI tasks (settings, categories, configurations) across multiple properties
-- **Self-Optimization**: Continuously learns from each session and improves its own workflow
+Automates property management tasks in Visitt via GraphQL API and browser automation:
 
-## Components
+- **Building deployment** — Parse Excel implementation sheets, visualize building structures, deploy buildings with floors, spaces, and equipment via API
+- **Automation management** — Create, update, and deploy work order automations across multiple properties with visual preview
+- **Bulk operations** — Apply configurations (categories, automations, settings) across multiple properties simultaneously
+- **System learning** — Methodology for approaching and mastering any new SaaS/web system
+- **Self-optimization** — Learns from each session and improves workflow efficiency over time
 
-### Skills
+## Skills
 
-| Skill | Purpose |
-|-------|---------|
-| `visitt-workflow` | Browser-based automation, UI patterns, deployment flow |
-| `visitt-api` | GraphQL API reference — all mutations, queries, and patterns |
-| `self-review` | Continuous optimization loop — reviews and improves after every task |
-
-### Hooks
-
-| Hook | Event | Purpose |
-|------|-------|---------|
-| `visitt-context.md` | SessionStart | Loads working rules at the start of every session |
-
-## Setup
-
-1. Install this plugin in Claude Cowork
-2. Log into Visitt (staging.visitt.io or app.visitt.io) in the browser
-3. Start working — the agent knows the API, the UI patterns, and the deployment flow
-
-No API keys or environment variables required — the plugin uses browser session cookies for authentication.
+| Skill | Description |
+|-------|-------------|
+| `visitt-api` | GraphQL API patterns for all Visitt entities — buildings, floors, spaces, equipment, tenants, automations |
+| `visitt-workflow` | Browser automation best practices, UI patterns, bulk configuration workflows |
+| `system-learning` | General methodology for learning new SaaS platforms — fetch interception, API discovery, automation escalation |
+| `self-review` | Continuous improvement loop — analyzes performance and updates skills after each task |
 
 ## Key Workflows
 
-### Deploy a Building from Excel
-1. Upload an implementation sheet (Excel)
-2. The agent parses floors, spaces, equipment
-3. A visual preview is shown for approval
-4. After approval, deployment runs via API (~10-20 seconds)
+### Building Deployment
+Excel → Parse → React JSX visualization → User approval → API deploy
 
-### Bulk Property Configuration
-1. Tell the agent what settings to update
-2. It learns the pattern from 2-3 manual repetitions
-3. Switches to JavaScript automation for the rest
+### Automation Deployment
+Discussion → Automation Builder (React JSX) → User review/edit → Approval → API deploy to N properties
 
-## Important Rules
+### Visual Preview (Mandatory)
+Every deployment requires a visual preview step. No exceptions.
 
-- **Always visualize before deploy** — No exceptions
-- **dummy_id_N format** — Floor IDs must use this exact format
-- **Self-review runs automatically** — After every task
+### Learning a New System
+Reconnaissance → Exploration → Automation Escalation → Problem Solving → Self-Updating
 
-## Environments
+## Changelog
 
-| Environment | URL | Concurrency | Delay |
-|-------------|-----|-------------|-------|
-| Staging | staging.visitt.io | 5 | 400ms |
-| Production | app.visitt.io | 3 | 800ms |
+### v0.4.0 (2026-03-19)
+- **Added Automation Builder visual template** (automation-builder-template.jsx) — locked React JSX template for visual automation previews before deployment
+- Added SessionStart hook (visitt-context.md) — working rules loaded at every session
+- Incorporated all automation learnings from business session: triggers, actions, bulk deploy patterns, category conflict handling
+- Full sync with latest .skills versions + CLAUDE.md knowledge
+
+### v0.3.0 (2026-03-19)
+- Added `system-learning` skill — general methodology for mastering any SaaS platform
+- Synced all skills to latest .skills versions
+- Updated plugin metadata and README
+
+### v0.2.0
+- Added automation management (automations-api.md reference)
+- Updated visitt-api with automation mutations and queries
+- Updated visitt-workflow with multi-property automation deployment
+
+### v0.1.0
+- Initial release with visitt-api, visitt-workflow, self-review
+
+## Requirements
+
+- Logged into Visitt staging or production in the browser
+- Chrome browser with Claude in Chrome extension for API calls
