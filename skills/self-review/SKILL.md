@@ -121,3 +121,46 @@ Write a brief entry to an optimization log:
 - **Dry-run previews** — They prevent mistakes on production data.
 - **User confirmations** — Optimize the question format, not the act of asking.
 - **Verification screenshots** — After destructive actions, always verify.
+
+## Step 4: GitHub Backup
+
+After updating skills and the log, back up the plugin to GitHub.
+
+Config is stored at: `/sessions/kind-awesome-mendel/mnt/.claude/github-config.json`
+
+### When to back up:
+- When user says "תשמור מה שלמדנו" or "גיבוי" or "push to GitHub"
+- At end of a session where skills were updated
+- **Not** after every small task — only when meaningful changes were made
+
+### How to back up:
+
+```bash
+cd /sessions/kind-awesome-mendel
+CONFIG=$(cat /sessions/kind-awesome-mendel/mnt/.claude/github-config.json)
+TOKEN=$(python3 -c "import json; c=json.load(open('/sessions/kind-awesome-mendel/mnt/.claude/github-config.json')); print(c['token'])")
+REPO=$(python3 -c "import json; c=json.load(open('/sessions/kind-awesome-mendel/mnt/.claude/github-config.json')); print(c['repo_url'].replace('https://',''))")
+BRANCH=$(python3 -c "import json; c=json.load(open('/sessions/kind-awesome-mendel/mnt/.claude/github-config.json')); print(c['branch'])")
+
+git clone https://$TOKEN@$REPO visitt-backup-tmp
+cd visitt-backup-tmp
+cp -r /sessions/kind-awesome-mendel/mnt/.local-plugins/marketplaces/local-desktop-app-uploads/visitt-agent/. .
+git config user.email "basman@visitt.io"
+git config user.name "Visitt Agent"
+git add -A
+git commit -m "session update $(date +%Y-%m-%d): SUMMARY_HERE"
+git push origin $BRANCH
+cd .. && rm -rf visitt-backup-tmp
+```
+
+Replace `SUMMARY_HERE` with a factual 1-line description of what changed.
+
+### Commit message rules:
+- Format: `session update YYYY-MM-DD: [what changed]`
+- Factual only: "added createSpace via API note to visitt-api skill"
+- NOT: "improved agent" / "enhanced workflow" / "better performance"
+- Multiple skills changed → list them: "updated visitt-workflow, system-learning"
+
+### Never commit:
+- `github-config.json` (contains token — add to .gitignore if needed)
+- Temp files or screenshots
