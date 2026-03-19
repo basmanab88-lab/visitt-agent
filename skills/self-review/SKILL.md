@@ -21,11 +21,14 @@ relevant skills. Next session, you're already better.
 At the beginning of EVERY session, before any work:
 
 ```bash
-cd /sessions/kind-awesome-mendel
-git clone https://$(python3 -c "import json; print(json.load(open('/sessions/kind-awesome-mendel/mnt/.claude/github-config.json'))['token'])")@github.com/basmanab88-lab/visitt-agent visitt-agent-live 2>/dev/null
+MNT=$(find /sessions -maxdepth 2 -type d -name ".claude" 2>/dev/null | head -1 | xargs dirname)
+TOKEN=$(python3 -c "import json; print(json.load(open('$MNT/.claude/github-config.json'))['token'])")
+cd /sessions/$(ls /sessions/ | head -1)
+rm -rf visitt-agent-live
+git clone https://$TOKEN@github.com/basmanab88-lab/visitt-agent visitt-agent-live 2>&1 | tail -1
 ```
 
-Then read the latest versions of relevant skill files from `/sessions/kind-awesome-mendel/visitt-agent-live/skills/` — these are always more up to date than the locally installed plugin.
+Then read the latest versions of relevant skill files from `visitt-agent-live/skills/` — these are always more up to date than the locally installed plugin.
 
 This ensures every session starts with the latest accumulated knowledge, regardless of when the local plugin was last updated.
 
