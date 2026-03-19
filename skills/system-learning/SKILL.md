@@ -295,8 +295,55 @@ This section is a living log. Add new entries as you work with different systems
 - **API-first building deployment (2026-03-19)**: Full building with 54 entities (5 floors, 36 spaces, 13 equipment) deployed in ~10s via internal GraphQL API. Flow: `insertBuilding` → `upsertFloors` → batch `insertSite` (concurrency 5, 400ms delay) → batch `changeSitesLocation` (one call per floor).
 - **Fetch interceptor for mutation discovery (2026-03-19)**: Used interceptor to capture `changeSitesLocation` signature — discovered missing `buildingId` param that caused silent failures. The interceptor technique resolved a bug in 30 seconds that took 3 failed API attempts to diagnose.
 - **Two-phase creation (2026-03-19)**: `insertSite` creates entities but does NOT assign them to floors. Must call `changeSitesLocation` as a second step. Entities without floor assignment appear under "Spaces & equipment without floors" — easy to miss if you don't verify visually.
-- **`companies` query pagination**: Requires `limit: Int!` and `skip: Int!`. Response nested as `data.companies.companies[]`. No `total` field available.
+- **`companies` query pagination**: Requires `limit: Int!` and `skip: Int!`. Response nested as `data.companies.companies[]`. No `total` field available. (2026-03-20)
+- **Bulk category operations (2026-03-20)**: Flow: unassign (`removeCategoryFromCompany`) → delete (`deleteCategory`) → create (`createCategory`). `createCategory` takes `{name, companyId, customerId}` — NO color field. 600 categories across 30 properties created in ~25s.
+- **Automation deployment (2026-03-20)**: `createAutomation` requires `actionValue` as string always (even JSON). `eventFields.companyId` is mandatory. `triggerDelay` only for `issue_not_seen`/`issue_not_completed`. 150 automations (5 × 30 properties) deployed in 24s.
+- **Visual Builder pattern (2026-03-20)**: JSX = display only. Claude populates data → user reviews → user says "פרוס" in chat → Claude deploys. Localhost server, localStorage, Electron fs — all blocked/unavailable. Don't try programmatic communication between JSX and Claude.
+- **Stacking plan: tree view first (2026-03-20)**: Always show collapsible tree (property→building→floor→spaces) BEFORE deploying. 2D grid is for reference only. Use `stacking-tree.jsx` pattern.
 - See the `visitt-api` skill for detailed Visitt API patterns.
+
+### javascript_tool — Async Execution Pattern (cross-system, 2026-03-20)
+
+`javascript_tool` does NOT support top-level `await`. The Promise returned by `(async () => { ... })()` is never resolved by the tool — the tool sees `undefined`.
+
+**Correct pattern — store in window, read in next call:**
+```javascript
+// Call 1: Start async operation
+fetch('/api').then(r => r.json()).then(d => {
+  window.__result = JSON.stringify(d);
+}).catch(e => { window.__result = "ERR: " + e.message; });
+"fetching..."  // return value to confirm it ran
+
+// Call 2: Read result (after a moment)
+window.__result || "not yet"
+```
+
+**For long-running operations** (bulk deployments), use a log array:
+```javascript
+// Start
+window.__log = [];
+window.__done = false;
+(async function run() {
+  for (const item of items) {
+    window.__log.push(`Processing ${item.name}...`);
+    // ... do work ...
+    window.__log.push(`✅ ${item.name} done`);
+  }
+  window.__done = true;
+})();
+"started"
+
+// Poll
+window.__done ? "DONE" : window.__log.slice(-5).join('\n')
+```
+
+**Shell substitution in chat**: When user sends `$(find ...)` in a chat message, the shell substitution is NOT evaluated — it arrives literally. Claude must run the `find` command manually via Bash tool.
+
+### Cross-Session Access Pattern (2026-03-20)
+
+Cannot access `/sessions/other-session-name/mnt/` from current session — each session is an isolated sandbox.
+
+**Workaround**: Use `mcp__session_info__list_sessions` to find the target session ID, then `mcp__session_info__read_transcript` to read its history and extract file contents or context. This was used to find the GitHub repo URL when CLAUDE.md was inaccessible.
 
 ### Google Calendar — Batch Event Management
 - **Bulk delete**: Use `[data-eventid]` to find events, `[data-datekey]` for day boundaries. Click event → click delete button (`[aria-label="Delete event"]`). Async loop with ~500ms delays.

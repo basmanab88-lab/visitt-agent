@@ -242,6 +242,63 @@ query buildings($companyId: String) {
 ### buildingStructure (get floors and spaces for a building)
 Use `fetchBuildingFloors` or `buildingStructure` queries to get the hierarchy.
 
+### companies (get all properties for a customer) — verified 2026-03-20
+```graphql
+query {
+  companies(customerId: ["generic_customer"], limit: 40, skip: 0) {
+    companies { _id name }
+  }
+}
+```
+**CRITICAL gotchas (discovered by trial and error):**
+- `limit` and `skip` are REQUIRED — omitting either causes a validation error
+- The return type is `PaginatedCompanies`. The nested data field is called `companies` (same name as the query). NOT `data`, `results`, `nodes`, `items`, or `edges` — those all fail
+- `total` field does NOT exist on `PaginatedCompanies` — remove it if you see it
+- `customerId` is an array: `["customer_slug"]`
+
+**Correct pattern to get property IDs:**
+```javascript
+fetch('/graphql', {
+  method: 'POST', headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify({ query: `query { companies(customerId: ["SLUG"], limit: 40, skip: 0) { companies { _id name } } }` })
+}).then(r => r.json()).then(d => {
+  window.__companies = d.data.companies.companies;
+  // now find by name: window.__companies.find(c => c.name === "Property 1")
+});
+```
+
+### categories (get all categories for a company)
+```graphql
+query { allCategories(companyId: "COMPANY_ID") { _id name } }
+```
+
+### Category mutations — verified 2026-03-20
+```graphql
+# Remove category from a property (unassign, not delete)
+mutation { removeCategoryFromCompany(categoryId: "ID", companyId: "COMPANY_ID") }
+
+# Delete a category globally
+mutation { deleteCategory(categoryId: "ID") }
+
+# Create a category (requires customerId, no color field)
+mutation createCategory($input: CategoryInput!) {
+  createCategory(input: $input) { _id name }
+}
+# Variables: { input: { name: "Fire Safety", companyId: "COMPANY_ID", customerId: "SLUG" } }
+```
+
+### Automation mutations — verified 2026-03-20
+```graphql
+mutation createAutomation($input: AutomationInput!) {
+  createAutomation(input: $input) { _id }
+}
+```
+**CRITICAL automation rules:**
+- `actionValue` is ALWAYS a string, even for JSON objects: `'{"number":4,"unit":"hours"}'`
+- `eventFields` MUST include `companyId`: `{ companyId: "COMPANY_ID", categoryIds: [...] }`
+- `triggerDelay` only for `issue_not_seen` / `issue_not_completed` events
+- Category IDs must be fetched first — never assume names match IDs
+
 ## How to Call Internal API from Browser
 
 Use `javascript_tool` to execute fetch calls from the same origin:

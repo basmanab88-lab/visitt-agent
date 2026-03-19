@@ -469,6 +469,55 @@ Full building deployment (building + floors + spaces + equipment) can be done en
 ### Excel Implementation Sheet Parsing (discovered 2026-03-17)
 Standard Visitt Excel template can be parsed with openpyxl. Space classification (leasable vs common vs technical) can be automated based on naming conventions. Full flow: Excel → Python parse → React visualization → user approval → API deployment.
 
+### Visual Builder Pattern — CORRECT WORKFLOW (discovered 2026-03-20)
+
+**What it is**: A React JSX file Claude generates so the user can visually review data before deployment. It is a DISPLAY tool, NOT an input mechanism.
+
+**Correct flow (the only one that works)**:
+1. Claude populates PLAN/DATA arrays directly in the JSX file
+2. Cowork renders the JSX — user sees the visual preview
+3. User says approval word ("פרוס", "יאללה", etc.) in chat
+4. Claude reads the data from the JSX file and deploys via API
+
+**What NEVER works** (tried and failed):
+- Fetch from `localhost:7778` — blocked by Cowork sandbox
+- `window.require('fs')` (Electron) — not available in renderer
+- `localStorage` — different context from Chrome browser
+- HTTP server in VM to receive data — blocked by sandbox
+
+**Key principle**: The JSX is Claude's canvas for showing data. The chat is the approval channel. They are separate — don't try to connect them programmatically.
+
+### Stacking Plan — Show Tree View BEFORE Deployment (discovered 2026-03-20)
+
+Before deploying buildings/floors/spaces, ALWAYS show a **hierarchical tree view** (not a 2D grid). The tree must be:
+- Collapsible/expandable per node (click to open/close)
+- Icons: 🏙 Property → 🏢 Building → 🪜 Floor → 🟩 Leasable / 🔷 Common / ⚙️ Equipment
+- Space counts at each level
+- "פרוס" button at bottom
+
+The 2D grid view (stacking-plan.jsx) was shown AFTER deployment — the user corrected this. Tree view is the right pre-deployment UX.
+
+**Template**: Use `stacking-tree.jsx` pattern — `PropertyNode > BuildingNode > FloorNode > SpaceRow`, all collapsible via `useState(true)`.
+
+### Always Verify companyIds Against API Before JSX (discovered 2026-03-20)
+
+When creating a JSX file with multiple properties, **never invent or copy-paste companyIds**. Always:
+1. Query `companies(customerId: [...], limit: 40, skip: 0) { companies { _id name } }` first
+2. Map names to IDs programmatically
+3. Paste verified IDs into JSX
+
+In this session, Generic Property 1 was given the wrong companyId (copied from Property 2 by mistake) — the API deployed to the wrong property. Verification takes 5 seconds and prevents silent misdeploys.
+
+### Bulk Category Operations (discovered 2026-03-20)
+Full flow for replacing ALL categories across N properties:
+1. Query all categories: `allCategories(companyId: ID) { _id name }`
+2. Batch unassign: `removeCategoryFromCompany(categoryId, companyId)` per property × category (concurrency 6, delay 400ms)
+3. Batch delete: `deleteCategory(categoryId)` for each old category
+4. Batch create: `createCategory(input: { name, companyId, customerId })` — NO color field
+5. 30 properties × 20 categories = 600 creates → runs in ~25s
+
+Timing verified: 240 unassigns + 8 deletes + 600 creates = ~75 seconds total on staging.
+
 ---
 
 ## Known Issues & Gotchas
@@ -478,4 +527,7 @@ Standard Visitt Excel template can be parsed with openpyxl. Space classification
 3. **Window variables lost on navigation**: SPA navigation clears `window._variables`. Store important IDs in `localStorage` or re-query via API.
 4. **Async javascript_tool returns undefined**: When using `(async () => { ... })()`, store results in `window._result` and read in a separate call.
 5. **Content filter blocking IDs**: Some base64-looking IDs get blocked. Return confirmation strings instead of raw IDs.
+6. **companies() nested field**: Return type is `PaginatedCompanies`. The data field is `companies` (same name). `limit` and `skip` are REQUIRED. `total` field does NOT exist.
+7. **insertSite does NOT assign to floor**: Must call `changeSitesLocation` after `insertSite` to place spaces on floors. `buildingId` param is required in `changeSitesLocation` — omitting causes silent failure.
+8. **createCategory has no color field**: The mutation only accepts `name`, `companyId`, `customerId`. Adding color causes a validation error.
 6. **Session cookies**: All API calls must include `credentials: 'include'` for cookie auth.
