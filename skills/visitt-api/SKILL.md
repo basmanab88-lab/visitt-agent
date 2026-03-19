@@ -299,6 +299,118 @@ mutation createAutomation($input: AutomationInput!) {
 - `triggerDelay` only for `issue_not_seen` / `issue_not_completed` events
 - Category IDs must be fetched first — never assume names match IDs
 
+### createAssignment (Inspections) — verified 2026-03-20
+
+Inspections are called "assignments" in the API. One mutation handles all frequency types.
+
+```graphql
+mutation createAssignment($input: CreateAssignmentInput!) {
+  createAssignment(input: $input) {
+    _id
+    name
+    interval
+    __typename
+  }
+}
+```
+
+**Full variables example (Weekly):**
+```json
+{
+  "input": {
+    "name": "Weekly Lobby Check",
+    "interval": "week",
+    "daysInWeek": [0, 1, 2, 3, 4],
+    "customFrequency": 1,
+    "startDate": "2026-03-23T22:00:00.000Z",
+    "categoryId": "",
+    "description": "",
+    "isGpsRequired": false,
+    "items": [
+      {
+        "_id": "_ASSIGNMENT_ITEM_TEMP_ID_<timestamp><random>",
+        "type": "sites_tasks",
+        "subItems": [
+          {
+            "_id": "_ASSIGNMENT_ITEM_TEMP_ID_<timestamp>_<random>",
+            "name": "Check cleanliness",
+            "type": "text"
+          }
+        ],
+        "siteIds": ["<siteId>"]
+      }
+    ],
+    "siteIds": ["<siteId>"],
+    "buildingIds": ["<buildingId>"],
+    "plannedInInterval": 0,
+    "companyId": "<companyId>",
+    "assignedUserIds": [],
+    "rrule": null,
+    "completionEndOfUnit": "week",
+    "completionPolicy": "end_of_unit"
+  }
+}
+```
+
+**Interval values (frequency → API value):**
+| UI Label | `interval` value | `daysInWeek` | `completionEndOfUnit` |
+|----------|-----------------|--------------|----------------------|
+| Hourly | `"hour"` | all days | `"hour"` |
+| Daily | `"day"` | `[0,1,2,3,4,5,6]` | `"day"` |
+| Weekly | `"week"` | `[0,1,2,3,4]` | `"week"` |
+| Every two weeks | `"2week"` | `[0,1,2,3,4]` | `"week"` |
+| Monthly | `"month"` | `[]` | `"month"` |
+| Every 2 months | `"2month"` | `[]` | `"month"` |
+| Every 3 months | `"3month"` | `[]` | `"month"` |
+| Every 4 months | `"4month"` | `[]` | `"month"` |
+| Every 6 months | `"6month"` | `[]` | `"month"` |
+| Annual | `"year"` | `[]` | `"year"` |
+| Custom | `"custom"` | varies | varies |
+
+Note: Only `"week"` confirmed by capture. Others inferred from pattern — verify if they fail.
+
+**Task types (`subItems[].type`):**
+| UI Label | API type |
+|----------|---------|
+| Text | `"text"` |
+| Number | `"numeric"` |
+| Checkbox | `"checkbox"` |
+| Section title | `"section_header"` |
+| Multiple choice | `"multiple_choice"` |
+| Signature | `"signature"` |
+| QR scan | `"qr_scan"` |
+
+**Temp ID format:** Generate unique IDs using `_ASSIGNMENT_ITEM_TEMP_ID_${Date.now()}${Math.random().toString(36).slice(2,14)}`. The parent item and each subItem need separate IDs.
+
+**Multi-space inspections:** Include all siteIds from all item groups in the top-level `siteIds` array. Create separate `items` entries per space group if different tasks are needed per space.
+
+**UI URL:** `/assignments#manageVisits` — Inspections list page. Use `#openVisits` for currently open inspections, `#manageVisits` for all inspection templates.
+
+**Bulk creation pattern (20 inspections in ~10s):**
+```javascript
+const CREATE_ASSIGNMENT = `mutation createAssignment($input: CreateAssignmentInput!) {
+  createAssignment(input: $input) { _id name interval __typename }
+}`;
+
+const tempId = () => `_ASSIGNMENT_ITEM_TEMP_ID_${Date.now()}${Math.random().toString(36).slice(2,14)}`;
+
+const buildInput = (insp) => {
+  const itemId = tempId();
+  return {
+    name: insp.name, interval: insp.interval, daysInWeek: insp.daysInWeek,
+    customFrequency: 1, startDate: new Date().toISOString(),
+    categoryId: "", description: "", isGpsRequired: false,
+    items: [{ _id: itemId, type: "sites_tasks",
+      subItems: insp.tasks.map(t => ({ _id: `${itemId}_${Math.random().toString(36).slice(2,8)}`, name: t.name, type: t.type })),
+      siteIds: insp.siteIds }],
+    siteIds: insp.siteIds, buildingIds: [BUILDING_ID], plannedInInterval: 0,
+    companyId: COMPANY_ID, assignedUserIds: [], rrule: null,
+    completionEndOfUnit: insp.completionEndOfUnit, completionPolicy: insp.completionPolicy
+  };
+};
+// Loop with 400ms delay between each call
+```
+
 ## How to Call Internal API from Browser
 
 Use `javascript_tool` to execute fetch calls from the same origin:

@@ -508,6 +508,67 @@ When creating a JSX file with multiple properties, **never invent or copy-paste 
 
 In this session, Generic Property 1 was given the wrong companyId (copied from Property 2 by mistake) — the API deployed to the wrong property. Verification takes 5 seconds and prevents silent misdeploys.
 
+### Inspections (Assignments) API — verified 2026-03-20
+
+Inspections are called "assignments" internally. The UI at `/assignments#manageVisits` shows all inspection templates.
+
+**Key discoveries:**
+- Mutation: `createAssignment($input: CreateAssignmentInput!)`
+- Temp IDs must be generated per inspection + per task: `_ASSIGNMENT_ITEM_TEMP_ID_${Date.now()}${random}`
+- `interval` values: `"day"`, `"week"`, `"month"`, `"year"` (only `"week"` confirmed; others inferred)
+- `daysInWeek` uses 0=Sun, 1=Mon, ..., 6=Sat; empty array for monthly/annual
+- `completionEndOfUnit` matches the interval unit (e.g., `"week"` for weekly)
+- `items` is an array of space groups — each group has `type: "sites_tasks"`, `siteIds`, and `subItems` (tasks)
+- Task types: `"text"`, `"numeric"`, `"checkbox"`, `"section_header"`, `"multiple_choice"`, `"signature"`, `"qr_scan"`
+- `siteIds` at top level = union of all siteIds from all items groups
+- Created 20 inspections in ~10s (sequential with 400ms delay) — zero errors
+
+**Inspection creation wizard UI:**
+- Step 1: Name + frequency (react-select dropdown — use computer click to open, XPath to select option)
+- Step 2: Spaces (multi-select with search) + tasks (textarea — use native setter hack)
+- Step 3: Order (drag-to-sort spaces)
+- URL: `/assignment/create?companyId=COMPANY_ID&customerId=SLUG`
+- UI navigation: sidebar "Inspections" link → `/assignments`
+
+**React-select hack (open + select):**
+```javascript
+// 1. Use computer tool (left_click on ref_71) to OPEN the dropdown
+// 2. Then use JS XPath to click the option:
+const el = document.evaluate('//div[text()="Weekly"]', document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+el.dispatchEvent(new MouseEvent('mousedown', {bubbles:true}));
+el.click();
+```
+
+**Task name textarea hack (react state won't update from type tool):**
+```javascript
+const ta = document.querySelector('textarea[placeholder="Enter task name"]');
+const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set;
+setter.call(ta, 'My Task Name');
+ta.dispatchEvent(new Event('input', {bubbles:true}));
+ta.dispatchEvent(new Event('change', {bubbles:true}));
+```
+
+**localStorage interceptor for mutation capture (persists across SPA navigation):**
+```javascript
+localStorage.removeItem('_gql_captured');
+const orig = window.fetch;
+window.fetch = function(...args) {
+  const [url, opts] = args;
+  if (url?.includes('graphql') && opts?.body) {
+    try {
+      const b = JSON.parse(opts.body);
+      if (b.operationName) {
+        const ex = JSON.parse(localStorage.getItem('_gql_captured') || '[]');
+        ex.push({ op: b.operationName, vars: b.variables, query: b.query });
+        localStorage.setItem('_gql_captured', JSON.stringify(ex));
+      }
+    } catch(e) {}
+  }
+  return orig.apply(this, args);
+};
+// After page navigates and redirects, read: JSON.parse(localStorage.getItem('_gql_captured'))
+```
+
 ### Bulk Category Operations (discovered 2026-03-20)
 Full flow for replacing ALL categories across N properties:
 1. Query all categories: `allCategories(companyId: ID) { _id name }`
@@ -531,3 +592,6 @@ Timing verified: 240 unassigns + 8 deletes + 600 creates = ~75 seconds total on 
 7. **insertSite does NOT assign to floor**: Must call `changeSitesLocation` after `insertSite` to place spaces on floors. `buildingId` param is required in `changeSitesLocation` — omitting causes silent failure.
 8. **createCategory has no color field**: The mutation only accepts `name`, `companyId`, `customerId`. Adding color causes a validation error.
 6. **Session cookies**: All API calls must include `credentials: 'include'` for cookie auth.
+8. **read_network_requests misses pre-call requests**: The tool only captures requests made AFTER first call. If creation fires before tracking starts, requests are lost. Use `localStorage` fetch interceptor instead — it survives SPA navigation.
+9. **Inspections URL is /assignments not /inspections**: Navigation to `/inspections` or `/assignment` returns 404. Correct path: `/assignments#manageVisits` (all templates) or `/assignments#openVisits` (active).
+10. **`type` tool doesn't work on task textarea**: Use native setter + dispatch events pattern instead.
