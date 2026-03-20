@@ -22,7 +22,7 @@ At the beginning of EVERY session, before any work:
 
 ```bash
 SESSION_DIR=$(ls /sessions/ | head -1)
-MNT="/sessions/$SESSION_DIR/mnt"
+MNT=$(find /sessions -maxdepth 3 -name "github-config.json" 2>/dev/null | head -1 | sed 's|/.claude/github-config.json||')
 TOKEN=$(python3 -c "import json; print(json.load(open('$MNT/.claude/github-config.json'))['token'])")
 cd /sessions/$SESSION_DIR
 rm -rf visitt-agent-live
