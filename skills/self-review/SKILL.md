@@ -29,7 +29,46 @@ rm -rf visitt-agent-live
 git clone https://$TOKEN@github.com/basmanab88-lab/visitt-agent visitt-agent-live 2>&1 | tail -1
 ```
 
-Then read the latest versions of relevant skill files from `visitt-agent-live/skills/` — these are always more up to date than the locally installed plugin.
+Then read these files immediately after cloning — in this order:
+1. `visitt-agent-live/skills/self-review/SKILL.md` (this file) — session rules + write protocol
+2. `visitt-agent-live/skills/visitt-api/SKILL.md` — all mutations and queries
+3. `visitt-agent-live/skills/visitt-workflow/SKILL.md` — UI patterns and gotchas
+4. `visitt-agent-live/memory/performance-log.md` — benchmarks
+
+The repo is the single source of truth. The locally installed plugin is outdated — ignore it.
+
+---
+
+## Write Protocol — MANDATORY before every push to GitHub
+
+Every session that pushes skill updates MUST follow this protocol. No exceptions.
+
+### Before writing to any skill file:
+
+```
+1. git pull --rebase          ← get latest from GitHub first
+2. Read the target file       ← what's already there?
+3. Search for your key terms  ← grep or read to find duplicates
+4. Decide:
+   - Already documented, same info  → DON'T WRITE, already there
+   - Already documented, but improved/changed → ADD new entry with [supersedes YYYY-MM-DD]
+   - Not documented → ADD at the bottom of the relevant section
+5. NEVER edit or delete existing lines
+6. NEVER rewrite a section from scratch
+7. git pull --rebase again before push ← in case another session pushed while you worked
+8. git push
+```
+
+### Why this matters:
+- Two sessions can work simultaneously — without this protocol they overwrite each other
+- Skills only grow, never shrink — old knowledge stays even if superseded (audit trail)
+- The `[supersedes]` tag lets future sessions know which entry is authoritative
+
+### Conflict resolution (if git says there's a merge conflict):
+- Keep BOTH versions of conflicting content
+- Add a date comment: `# merged YYYY-MM-DD — kept both entries`
+- Never delete either side
+
 
 This ensures every session starts with the latest accumulated knowledge, regardless of when the local plugin was last updated.
 
