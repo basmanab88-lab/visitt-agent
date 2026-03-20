@@ -21,9 +21,10 @@ relevant skills. Next session, you're already better.
 At the beginning of EVERY session, before any work:
 
 ```bash
-MNT=$(find /sessions -maxdepth 2 -type d -name ".claude" 2>/dev/null | head -1 | xargs dirname)
+SESSION_DIR=$(ls /sessions/ | head -1)
+MNT="/sessions/$SESSION_DIR/mnt"
 TOKEN=$(python3 -c "import json; print(json.load(open('$MNT/.claude/github-config.json'))['token'])")
-cd /sessions/$(ls /sessions/ | head -1)
+cd /sessions/$SESSION_DIR
 rm -rf visitt-agent-live
 git clone https://$TOKEN@github.com/basmanab88-lab/visitt-agent visitt-agent-live 2>&1 | tail -1
 ```
