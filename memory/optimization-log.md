@@ -46,3 +46,31 @@ Audit trail of session learnings. The real value lives in the updated skill file
 - `system-learning`: javascript_tool async pattern, cross-session access workaround, Visitt bulk operation benchmarks
 
 **User feedback**: "מה שהיית אמור להציג לי לפני זה זה איזה ויז'ואל בילדר עם תצוגת עץ נקייה קליקבילית" — clear correction on tree view before deployment.
+
+---
+
+## 2026-03-20 (Session 2) — Inspections + Tenants/Contacts/Spaces/My Property Exploration
+
+**Tasks**:
+- Explored Visitt Inspections (Assignments) section A-Z: captured `createAssignment` mutation
+- Created 20 bulk inspections for Skynet property via API (20/20 success, ~10s)
+- Built React JSX Visual Builder for inspection preview (pre-deploy visualization)
+- Explored Tenants & Contacts: captured `addContacts`, `setTenant`, `contacts` query
+- Explored Spaces in tenant detail: captured `setTenant` with `locations[{siteId,isLeased}]`
+- Explored My Property (`/building/<id>`): captured `insertSite` for spaces + equipment, `sitesSearch`, `buildingStructure`
+
+**Bottlenecks & fixes**:
+- **Ariakit SelectCombobox took 4 attempts**: Tried react-select selectors first. Root cause: two different dropdown libraries in the same app. Rule added: inspect component class before trying selectors. Ariakit = `button.SelectComboboxValue` + `[role="option"]`.
+- **localStorage interceptor re-install**: Required 3+ times per session after SPA navigation. Expected — document pattern and just do it automatically every time.
+- **`activeSideMenuItem=spaces` is wrong**: The Spaces tab in tenant detail is actually `locations`. Wasted one navigation attempt.
+- **`/my-property` returns 404**: Correct URL is `/building/current` → redirects to `/building/<id>`. Now documented.
+- **github-config.json missing (2nd session in a row)**: 2 commits waiting locally (ec7e2ac + 8d96f4b). Push blocked. User must create this file to unblock.
+
+**Skills updated**:
+- `visitt-api`: setTenant full input (locations+contacts), addContacts with tenants[] field, new queries (tenants, tenant, contacts, sitesSearch, allSites), insertSite equipment variant
+- `visitt-workflow`: Tenants/Contacts URL patterns, Ariakit SelectCombobox pattern, My Property section, new gotchas #11-13
+- `system-learning`: Ariakit vs react-select distinction, setTenant replace-all pattern, insertSite dual-purpose, /building/current shortcut, new Visitt entries
+
+**User feedback**: No explicit feedback this session — autonomous completion.
+
+**Pending**: Push 2 commits to GitHub once github-config.json is restored.
