@@ -448,6 +448,50 @@ fetch('/graphql', {
 });
 ```
 
+### Multi-Property Bulk Deployment Pattern — verified 2026-03-20
+
+Use this pattern any time a task needs to run across ALL properties of a customer (categories, inspections, automations, etc.).
+
+```javascript
+// Step 1: Get all property IDs for a customer
+const props = await fetch('/graphql', {
+  method: 'POST', headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify({ query: `query { companies(customerId: ["CUSTOMER_SLUG"], limit: 40, skip: 0) { companies { _id name } } }` })
+}).then(r => r.json()).then(d => d.data.companies.companies);
+
+// Step 2 (optional): Get buildings per property
+const buildings = await Promise.all(props.map(p =>
+  fetch('/graphql', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ query: `query { allBuildings(companyId: "${p._id}") { _id name } }` })
+  }).then(r => r.json()).then(d => ({ ...p, buildings: d.data?.allBuildings || [] }))
+));
+
+// Step 3 (optional): Get sites per property
+const sitesQuery = `query allSites($input: SitesSearchInput) { allSites(input: $input) { _id name modelType buildingId } }`;
+const withSites = await Promise.all(buildings.map(p =>
+  fetch('/graphql', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ query: sitesQuery, variables: { input: { companyId: p._id } } })
+  }).then(r => r.json()).then(d => ({ ...p, sites: (d.data?.allSites || []).filter(s => s.modelType === 'site' || s.modelType === 'leasable_site') }))
+));
+
+// Step 4: Deploy per property with delay
+const delay = ms => new Promise(r => setTimeout(r, ms));
+for (const prop of withSites) {
+  // ... build and create the entity (inspection, category, etc.)
+  await fetch('/graphql', { ... });
+  await delay(400);
+}
+```
+
+**Performance benchmarks (verified 2026-03-20):**
+- 24 inspections (12 properties × 2) → ~12 seconds
+- 600 categories (30 properties × 20) → ~25 seconds
+- 150 automations (30 properties × 5) → ~24 seconds
+
+**Important:** Always store intermediate results in `localStorage` (not `window._var`) when doing multi-step queries. `window._var` is lost if you accidentally navigate. `localStorage` survives SPA navigation.
+
 ### categories (get all categories for a company)
 ```graphql
 query { allCategories(companyId: "COMPANY_ID") { _id name } }
