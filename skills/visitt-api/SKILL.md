@@ -935,3 +935,76 @@ query { allCompanies(customerId: "CUSTOMER_SLUG") { _id name } }
 query { building(buildingId: "BUILDING_ID") { _id name sites { _id name } } }
 ```
 Flow: `allBuildings(companyId)` → get buildingIds → `building(buildingId) { sites {} }` per building.
+
+## createWorkOrder — Internal API (verified 2026-03-21)
+
+Work orders are created via the internal API at `/graphql`. Navigate to `/issues` first (or be on a property page) to ensure session context is set to the right property.
+
+**Discovery method:** Intercepted by patching `window.fetch` on the `/issues` page after the page loaded. Apollo cached the ORIGINAL fetch reference at module load, but on this page the reference was live.
+
+```graphql
+mutation createWorkOrder($input: CreateWorkOrderInput!) {
+  createWorkOrder(input: $input) { _id }
+}
+```
+
+**Full input — all discovered fields:**
+```json
+{
+  "input": {
+    "buildingId": "BUILDING_ID",
+    "description": "Work order description here",
+    "tenantId": null,
+    "contactIds": [],
+    "assignedUserIds": [],
+    "checklist": null,
+    "defectImages": [],
+    "subCategoryId": "",
+    "categoryId": "",
+    "priority": null,
+    "siteId": ""
+  }
+}
+```
+
+**Key notes (2026-03-21):**
+- `buildingId` is REQUIRED — omitting it causes DataLoader error ("The loader.load() function must be called with a value, but got: undefined")
+- `description` is the only other required field (`String!`)
+- `companyId`/`propertyId`/`locationId` are NOT valid fields — use `buildingId` instead
+- The work order is automatically scoped to the property that owns the building
+- Navigate to the property's work orders page first, then fire mutations — session context matters
+- The `/issues/issue/create` URL opens the create dialog directly
+
+**Batch creation script pattern:**
+```javascript
+const CREATE_WO = `mutation createWorkOrder($input: CreateWorkOrderInput!) {
+  createWorkOrder(input: $input) { _id }
+}`;
+// Get buildingId via: allBuildings(companyId: PROPERTY_ID) { _id }
+// Then fire one mutation per work order with 400ms delay
+```
+
+## createAutomation — eventFields format correction (2026-03-21)
+
+The `eventFields` format documented above (`{ companyId, categoryIds }`) is WRONG for the current API. The correct format discovered from Apollo cache inspection:
+
+```json
+{
+  "input": {
+    "eventType": "newIssue",
+    "eventFields": [{ "type": "companyId", "_id": "PROPERTY_ID" }],
+    "action": "setPriority",
+    "actionValue": "\"10\"",
+    "isBasedOnOfficeHours": true
+  }
+}
+```
+
+**Confirmed action values:**
+- `setDefaultDueDate` → `actionValue: JSON.stringify({ number: 3, unit: 'days' })` e.g. `'{"number":3,"unit":"days"}'`
+- `setPriority` → `actionValue: JSON.stringify('"10"')` = `'"10"'` (Low), `'"20"'` = Medium, `'"30"'` = High, `'"40"'` = Critical
+- `setAssignedUsers` → `actionValue` = JSON array of user IDs
+
+**Error: "Similar automation exists"** — The API rejects duplicate automation types per property. Check existing automations before creating.
+
+**Fetch intercept gotcha (2026-03-21):** Apollo caches its fetch reference at module load. Replacing `window.fetch` after load misses Apollo mutations MOST of the time. However, on the `/issues` page, `createWorkOrder` WAS caught by a post-load `window.fetch` override — possibly because the work order mutation uses a different Apollo link or is batched differently. For `createAutomation`, the override did NOT work. To safely intercept mutations: use `window.__APOLLO_CLIENT__` for cache inspection, and probe input types iteratively with `variables: { input: {} }` error messages.

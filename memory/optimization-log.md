@@ -96,3 +96,23 @@ Audit trail of session learnings. The real value lives in the updated skill file
 **User feedback**: "נראה טוב" on visual preview. Protocol update added for git push flow.
 
 **Pending next session**: Assign leasable spaces to tenants via `setTenant` with `locations[{buildingId, siteId, isLeased}]`. Format is in the skill — just need Chrome reconnected.
+
+## 2026-03-21 — Full Demo Client Setup (Apex Properties)
+
+**Bottlenecks:**
+- Work order mutation discovery: ~25 min of probing. Next time: use iterative `variables: { input: {} }` probing immediately instead of searching the bundle or intercepting Apollo.
+- Automation mutation intercept: Apollo fetch override missed `createAutomation`. Wasted attempts on bundle search. Fix: use `window.__APOLLO_CLIENT__` cache inspection + iterative probe.
+- Navigation: `/issues/automation/create` URL redirects to work orders list — must go to Automation tab first.
+
+**Skills updated:**
+- `visitt-api` — Added full `createWorkOrder` internal mutation docs (buildingId required, full input shape). Added `createAutomation` eventFields correction.
+- `system-learning` — Added Apollo intercept patterns, bundle analysis shortcut, work order/automation URL paths.
+
+**Session output:**
+- Customer: Apex Properties (5 properties)
+- Stacking plan: 5 buildings, 26 floors, 96 spaces+equipment
+- Users: 7 staff
+- Tenants: 15 (3/property)
+- Contacts: 30 (6/property)
+- Work orders: 15 (3/property)
+- Automations: 2/property (setDefaultDueDate + setPriority)

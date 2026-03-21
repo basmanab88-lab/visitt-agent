@@ -38,3 +38,5 @@ Starting point for future comparison:
 - Parallel calls (e.g., `Promise.all`) use no delay — just network speed
 - Rate = items ÷ total_seconds (not accounting for delay overhead)
 - Error rate so far: **0/0** — all operations at 100% success
+| 2026-03-21 14:00 | `work_order_create` | Apex Properties — 14 WOs via API + 1 via UI | 15 | 7s | 2.1/s | buildingId required field. 400ms delay. 0 errors |
+| 2026-03-21 14:10 | `automation_create` | Apex Properties — 4 properties × 2 automations | 8 | 5s | 1.6/s | AutomationInput, 400ms delay. 4 "similar exists" skips |

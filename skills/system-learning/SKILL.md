@@ -369,3 +369,27 @@ When starting with any new system, run through this mentally:
 6. **2-3 manual reps** — learn the exact sequence
 7. **Automate** — write a script for remaining repetitions
 8. **Document** — update this skill file
+
+### Apollo Client Intercept Patterns (2026-03-21)
+
+**`window.__APOLLO_CLIENT__`** is exposed on the Visitt staging frontend. Use it to:
+- Inspect the cache: `window.__APOLLO_CLIENT__.cache.extract()` → all cached entities with their full structure
+- Understand data models without needing introspection or UI inspection
+- Find entity field names by looking at `__typename` objects in the cache
+- Identify related entity types (e.g. `AutomationEventField` has `{ type, _id, name }`)
+
+**Fetch intercept reliability:**
+- `window.fetch` override AFTER page load → catches SOME mutations (e.g. `createWorkOrder` on `/issues`), misses others (`createAutomation`)
+- `XMLHttpRequest` override → useless (Apollo uses native fetch, not XHR)
+- `Response.prototype.json` override → catches response but not request body
+- **Most reliable**: probe iteratively with `variables: { input: {} }` → error message reveals required fields and type names
+- **Field discovery order**: `{}` → "field X of required type Y!" → add X, retry → repeat until runtime error (not validation)
+
+**Bundle analysis shortcut:**
+- Visitt uses a single-chunk Vite bundle (`index-CzWIvXQb.js`). GraphQL mutation strings are NOT in the bundle as literals — they're constructed programmatically.
+- `window._bundle.includes('mutationName')` returns false even for valid mutations.
+- Don't waste time searching the bundle for mutation definitions.
+
+**Work order creation path:**
+- URL: `/issues/issue/create` opens the create dialog directly (no need to click button)
+- Automation creation URL: `/issues/automation/create` — BUT this URL redirects to open work orders list; instead, click the Automation tab → navigate to `#automations` hash first, then the link `href="/issues/automation/automation/create"` works
