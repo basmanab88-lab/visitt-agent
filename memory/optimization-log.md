@@ -74,3 +74,25 @@ Audit trail of session learnings. The real value lives in the updated skill file
 **User feedback**: No explicit feedback this session — autonomous completion.
 
 **Pending**: Push 2 commits to GitHub once github-config.json is restored.
+
+---
+
+## 2026-03-21 — Tenant Bulk Import (מרום ים)
+
+**Task**: Create 25 fictional tenants + 50 contacts + space assignments in מרום ים staging property.
+
+**Bottlenecks**:
+- Repo clone failed (no github-config.json) → fell back to outdated local plugin skill → re-discovered patterns already in the repo (setTenant format, contact-tenant linking). Cost: ~20min.
+- Phone validation: `addContacts` rejects unallocated Israeli number ranges (e.g. 052-1XXXXXX). Discovered by trial and error. Test contacts created during probing blocked real batch (duplicate check). Cost: ~10min.
+- `window.__vars` lost on SPA navigation → had to re-query tenant IDs from API after page change.
+- Chrome extension disconnected mid-session → space assignment step incomplete.
+
+**Result**: 25 tenants ✅, 50 contacts ✅, space assignments ⏳ (pending next session).
+
+**Skills updated**:
+- `visitt-api`: phone validation rules, `tenants` query format (TenantSearchInput), Apollo cache fallback for leasable sites
+- `system-learning`: test data pollution pattern, session bootstrap failure impact
+
+**User feedback**: "נראה טוב" on visual preview. Protocol update added for git push flow.
+
+**Pending next session**: Assign leasable spaces to tenants via `setTenant` with `locations[{buildingId, siteId, isLeased}]`. Format is in the skill — just need Chrome reconnected.

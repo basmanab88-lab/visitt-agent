@@ -254,6 +254,37 @@ mutation addContacts($input: [ContactInput!]!) {
 - Batch: pass multiple objects in the `input` array to create many contacts at once
 - After creation, if invite toggle is ON, a `createBroadcast` fires automatically with welcome email template `"not_invited_to_portal_contacts"`
 - Global contacts URL: `/tenants#contacts`; per-tenant contacts: `/tenant/<id>?activeSideMenuItem=contacts`
+- **Phone validation (2026-03-21):** The API validates Israeli phones with libphonenumber. Format MUST be `+97250XXXXXXX` / `+97252XXXXXXX` / `+97254XXXXXXX` (9 digits after +972). Sub-ranges like `052-1XXXXXX` (`+9725[12]1XXXXXX`) may fail validation — they're unallocated. **Always test one contact first before batching 50.** Use distinct test emails/phones (e.g. `_test_@...`) to avoid polluting the system with dummy contacts that then block real ones via duplicate-phone/email check.
+
+### tenants (internal query — verified 2026-03-21)
+Get all tenants for a property. Note: uses `input: TenantSearchInput!` (not direct args).
+```graphql
+query tenants($input: TenantSearchInput!) {
+  tenants(input: $input) {
+    tenants { _id name }
+  }
+}
+```
+**Variables:** `{ "input": { "companyId": "PROPERTY_ID" } }`
+- `TenantSearchInput` does NOT accept `limit` or `skip` fields
+- Returns `PaginatedTenants { tenants[] }` — no `total` field
+
+### Getting leasable sites via Apollo cache (fallback — 2026-03-21)
+When `allSites` queries return empty (schema mismatch or missing buildingId), extract from Apollo cache instead:
+```javascript
+const ac = window.__APOLLO_CLIENT__;
+const cache = ac.cache.extract();
+const buildingId = 'YOUR_BUILDING_ID';
+const leasable = [];
+for (const [key, val] of Object.entries(cache)) {
+  if (!key.startsWith('Site:')) continue;
+  if (JSON.stringify(val).includes(buildingId) && val.modelType === 'leasable_site') {
+    leasable.push({ _id: key.replace('Site:', ''), name: val.name });
+  }
+}
+// Store: window.__leasableSites = leasable;
+```
+This works when already navigated to the building page (cache is pre-populated from UI queries). IDs extracted this way are valid for `setTenant locations[].siteId`.
 
 ### Other useful mutations discovered in code:
 - `updateBuilding` — UpdateBuildingInput!
