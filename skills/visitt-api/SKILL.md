@@ -860,6 +860,110 @@ This is the sequence for creating a complete demo property setup using the inter
 - **`companies` query requires pagination:** Must pass `limit: Int!` and `skip: Int!`. Response is nested: `data.companies.companies[]`. No `total` field on `PaginatedCompanies`.
 - **Duplicate names:** When creating multiple entities with the same name (e.g., "שירותים" on different floors), track IDs carefully — `allSites` won't distinguish them by name alone. Use creation order or query after creation to map correctly.
 
+---
+
+## Visitors API — discovered 2026-03-21
+
+### createVisitor
+Creates a visitor pass. Used for both "Existing contact" and "Not a contact" modes.
+```graphql
+mutation createVisitor($input: CreateVisitorInput!) {
+  createVisitor(input: $input) {
+    _id
+    email
+    comment
+    startDate
+    endDate
+  }
+}
+```
+**Variables — "Not a contact" mode** (host is not in the contacts list):
+```json
+{
+  "input": {
+    "companyId": "PROPERTY_ID",
+    "tenantId": "TENANT_ID",
+    "firstName": "Visitor First",
+    "lastName": "Visitor Last",
+    "startDate": "2026-03-21",
+    "arrivalTime": { "isAllDay": true }
+  }
+}
+```
+**Variables — "Existing contact" mode** (host is a registered contact):
+```json
+{
+  "input": {
+    "companyId": "PROPERTY_ID",
+    "contactId": "CONTACT_ID",
+    "startDate": "2026-03-21",
+    "arrivalTime": { "isAllDay": true }
+  }
+}
+```
+**Optional fields:** `email`, `comment`, `endDate` (for multi-day visits).
+
+**`arrivalTime: CreateVisitorArrivalTimeInput!`** — REQUIRED. Use `{ isAllDay: true }` for all-day. Specific time: likely `{ isAllDay: false, startTime: "09:00", endTime: "17:00" }` (TBD — capture from UI).
+
+**Permissions note:** Returns `Unauthorized` if logged-in user doesn't have visitor management rights for that property.
+
+**Useful query — visitors list:**
+```graphql
+query visitors($input: VisitorsSearchInput!) {
+  visitors(input: $input) { ... }
+}
+```
+(Full query shape TBD — capture via GQL interceptor from `/visitors` page load)
+
+---
+
+## Amenities API — discovered 2026-03-21
+
+### setAmenity
+Create or update an amenity. Same mutation for both. Include `_id` in input to update.
+```graphql
+mutation setAmenity($input: AmenityInput!) {
+  setAmenity(input: $input) {
+    ...AmenityItem
+  }
+}
+```
+**AmenityItem fields:** `_id, name, buildingId, locationName, defaultAssignedUsers, images, image, description, roomEmailAddress, maxPeopleNumber, bookingTimes { dayOfWeek, timeRanges { start, end, isBillable } }, timeSlotDuration, timeSlotPrice, bookingInAdvanceRule { minInAdvance { enabled, value, unit } }`
+
+**AmenityInput fields** (from form): `name, buildingId, description, maxPeopleNumber, timeSlotDuration, timeSlotPrice, defaultAssignedUserIds, bookingTimes, bookingInAdvanceRule, roomEmailAddress` (exact field names TBD — capture via GQL interceptor on form submit)
+
+### archiveAmenity
+Deletes/archives an amenity.
+```graphql
+mutation archiveAmenity($amenityId: String!) {
+  archiveAmenity(amenityId: $amenityId)
+}
+```
+
+### updateAmenityBooking
+Updates an existing booking (status, time, etc.).
+```graphql
+mutation updateAmenityBooking($amenityBookingId: String!, $input: UpdateAmenityBookingInput!) {
+  updateAmenityBooking(amenityBookingId: $amenityBookingId, input: $input) { _id }
+}
+```
+
+### bookAmenity / deleteAmenityBooking / cancelAmenityBooking
+These mutations exist in the schema but return `GRAPHQL_VALIDATION_FAILED: Invalid query` when called directly. Must be captured via GQL interceptor from the "+ Book amenity" UI flow. Do not probe these directly — use the UI to trigger them and read from `localStorage._gql_captured`.
+
+### amenities query (list)
+```graphql
+query amenities($companyId: String!, $skip: Int!, $limit: Int!) {
+  amenities(companyId: $companyId, skip: $skip, limit: $limit) {
+    amenities { ...AmenityItem  createdAt  locationName }
+    hasNext
+    totalCount
+  }
+}
+```
+
+---
+
 ## TODO: Areas to Expand
 - Exact fields for `ContactLocationInput` (to link contacts to tenants)
 - How to assign leased spaces to tenants via API (setTenant with locations?)
@@ -867,6 +971,9 @@ This is the sequence for creating a complete demo property setup using the inter
 - Pagination patterns for large datasets
 - Build a "tear down" script to delete all entities created by the demo script
 - Nest sub-spaces under parent spaces via `changeSitesLocation` (same mutation, use parent space ID as `parentSiteId`)
+- Full `CreateVisitorInput` fields (especially `arrivalTime` sub-fields for timed visits)
+- `bookAmenity` input shape + `AmenityInput` exact field names (capture from UI)
+- Document page mutations: `createDocument`, `deleteDocument`, tag mutations
 
 ## createAssignment — CRITICAL Corrections (verified 2026-03-21)
 

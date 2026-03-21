@@ -97,22 +97,61 @@ Audit trail of session learnings. The real value lives in the updated skill file
 
 **Pending next session**: Assign leasable spaces to tenants via `setTenant` with `locations[{buildingId, siteId, isLeased}]`. Format is in the skill — just need Chrome reconnected.
 
-## 2026-03-21 — Full Demo Client Setup (Apex Properties)
+---
 
-**Bottlenecks:**
-- Work order mutation discovery: ~25 min of probing. Next time: use iterative `variables: { input: {} }` probing immediately instead of searching the bundle or intercepting Apollo.
-- Automation mutation intercept: Apollo fetch override missed `createAutomation`. Wasted attempts on bundle search. Fix: use `window.__APOLLO_CLIENT__` cache inspection + iterative probe.
-- Navigation: `/issues/automation/create` URL redirects to work orders list — must go to Automation tab first.
+## 2026-03-21 — Page Learning: Visitors, Amenities, Documents
 
-**Skills updated:**
-- `visitt-api` — Added full `createWorkOrder` internal mutation docs (buildingId required, full input shape). Added `createAutomation` eventFields correction.
-- `system-learning` — Added Apollo intercept patterns, bundle analysis shortcut, work order/automation URL paths.
+**Task**: Learn all actions/operations on Visitors, Amenities, and Documents pages in staging.visitt.io so future deploys/executions are faster.
 
-**Session output:**
-- Customer: Apex Properties (5 properties)
-- Stacking plan: 5 buildings, 26 floors, 96 spaces+equipment
-- Users: 7 staff
-- Tenants: 15 (3/property)
-- Contacts: 30 (6/property)
-- Work orders: 15 (3/property)
-- Automations: 2/property (setDefaultDueDate + setPriority)
+**Bottlenecks**:
+- Visitor form submit didn't fire mutation via interceptor — root cause: React radio click via `.click()` didn't update React state (prop type warning appeared). Workaround: use React native setter hack for all inputs, not `.click()`.
+- `bookAmenity` / `deleteAmenityBooking` / `cancelAmenityBooking` return "Invalid query" (GRAPHQL_VALIDATION_FAILED) when probed directly — cannot be called via custom queries. Must use GQL interceptor from real UI flow.
+- Session expired before Documents mutation capture completed — need a fresh session for that.
+- Finding properties with tenants: Westside Commons (`69be7bbe633d48b012df1d7b`) has 3 tenants. Briarwood (`69be7bbe633d48b012df1d7f`) has zero — very similar IDs, easy to confuse.
+
+**Techniques discovered**:
+- Batch-checking tenant counts across properties: parallel `tenants(input: {companyId})` queries via `Promise.all` — found a property with tenants in one round-trip.
+- Chunk discovery: search the main bundle for `assets/XXXX.js` patterns to find lazy-loaded chunk filenames, then fetch them directly to extract GQL templates.
+- GQL probe for "does mutation exist": `mutation { mutationName }` → "Cannot query field" = NOT FOUND, "Invalid query" = EXISTS (needs proper args).
+- Mutation input type discovery: `mutation M($input: FakeInputType!) { M(input: $input) { _id } }` → "Unknown type" = mutation exists with `input` arg.
+
+**Skills updated**:
+- `visitt-workflow/SKILL.md` — Added full Page Maps for Visitors, Amenities, Documents (URLs, table columns, buttons, filters, form fields, mutation signatures)
+- `visitt-api/SKILL.md` — Added `createVisitor`, `setAmenity`, `archiveAmenity`, `updateAmenityBooking` with full signatures + variables. Added TODO items for remaining unknowns.
+- `memory/optimization-log.md` — This entry.
+
+**User feedback**: Session continued from previous context window — no explicit feedback during this session.
+
+**Pending next session**:
+- Documents: capture `createDocument` mutation (load page with interceptor active before clicking "+ Add document")
+- `bookAmenity` input shape: load amenity booking page with interceptor, click "+ Book amenity", fill form, submit
+- `arrivalTime` sub-fields for timed (non-all-day) visitor visits
+- Visitor delete/cancel mutation names
+
+
+---
+
+## 2026-03-21 — Page Learning: Visitors, Amenities, Documents
+
+**Task**: Learn all actions/operations on Visitors, Amenities, and Documents pages in staging.visitt.io so future deploys/executions are faster.
+
+**Bottlenecks**:
+- Visitor form submit didn't fire mutation via interceptor — root cause: React radio click via `.click()` didn't update React state (prop type warning appeared). Workaround: use React native setter hack for all inputs, not `.click()`.
+- `bookAmenity` / `deleteAmenityBooking` / `cancelAmenityBooking` return "Invalid query" (GRAPHQL_VALIDATION_FAILED) when probed directly — cannot be called via custom queries. Must use GQL interceptor from real UI flow.
+- Session expired before Documents mutation capture completed — need a fresh session for that.
+- Finding properties with tenants: Westside Commons (`69be7bbe633d48b012df1d7b`) has 3 tenants. Briarwood (`69be7bbe633d48b012df1d7f`) has 0 — similar IDs, easy to confuse.
+
+**Techniques discovered**:
+- Batch-checking tenant counts across properties: parallel `tenants(input: {companyId})` via `Promise.all` — found tenanted property in one round-trip.
+- Chunk discovery: search main bundle for `assets/XXXX.js` strings to find lazy-loaded chunks, then fetch directly.
+- GQL probe rules: "Cannot query field" = NOT FOUND, "Invalid query" = EXISTS, "Unknown type" = mutation exists with `input` arg (type unknown).
+
+**Skills updated**:
+- `visitt-workflow/SKILL.md` — Full Page Maps for Visitors, Amenities, Documents
+- `visitt-api/SKILL.md` — createVisitor, setAmenity, archiveAmenity, updateAmenityBooking + TODO items
+- `memory/optimization-log.md` — This entry
+
+**Pending next session**:
+- Documents mutations: load with interceptor → click "+ Add document" → submit → capture
+- `bookAmenity` input shape: interceptor → "+ Book amenity" UI flow → capture
+- Visitor delete/cancel mutation names

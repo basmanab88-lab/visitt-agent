@@ -632,3 +632,187 @@ Timing verified: 240 unassigns + 8 deletes + 600 creates = ~75 seconds total on 
 11. **Tenant "Spaces" tab uses `activeSideMenuItem=locations`**: Despite the UI button saying "Spaces", the internal URL param is `locations`. Navigating to `?activeSideMenuItem=spaces` shows a blank tab.
 12. **`setTenant` replaces entire tenant data**: When updating locations OR contacts, you must include the full existing set of both in the mutation. Sending only the new item will delete everything else.
 13. **My Property URL is `/building/current` not `/my-property`**: `/my-property` returns 404. The sidebar link points to `/building/current` which redirects to `/building/<buildingId>`.
+14. **createVisitor requires `arrivalTime` field**: The mutation will error with "Field arrivalTime of required type CreateVisitorArrivalTimeInput! was not provided" if you omit it. Always pass `arrivalTime: { isAllDay: true }` for all-day visits.
+15. **Amenities feature can be disabled per property**: The Bookings tab shows a banner "Property feature Amenities is disabled Edit" if the property hasn't enabled it. To find a property with Amenities active, pick one from the dropdown selector.
+16. **bookAmenity / deleteAmenityBooking return "Invalid query"**: These mutations exist in the schema but return `GRAPHQL_VALIDATION_FAILED: Invalid query` at the field level. They may require special auth or a specific query document format. Capture via GQL interceptor from the real UI flow instead of probing directly.
+17. **Visitor contact selector shows "No results" without contacts**: The "Existing contact" mode host dropdown only lists contacts (people), not tenants. If a property has tenants but no contacts, the dropdown is empty. Switch to "Not a contact" mode which uses the tenant list.
+
+---
+
+## Page Map: Visitors (discovered 2026-03-21)
+
+**URLs:**
+- List: `/visitors` — defaults to `#visitor-list`
+- Watchlist: `/visitor-watchlist#watchlist`
+- Create: `/visitor/create?companyId=COMPANY_ID`
+
+**Bookings list table columns:** Visitor, Expected At, Tenant, Host, Entry Status
+
+**Buttons/actions on list page:** "+ Add visitor", "Visitor Watchlist", "Export", "Columns"
+
+**Filters:** Visit schedule (All expected), Building, Tenant
+
+**Create form — two modes (Host details section):**
+
+Mode 1: **Existing contact** (radio `contactIsHost = true`)
+- "Select contact" dropdown → searches contacts for the property
+- Visitor: First Name*, Last Name*, Email (optional)
+- Access: Single-day / Multi-day, From* date, All day toggle
+- Additional info (optional)
+
+Mode 2: **Not a contact** (radio `contactIsHost = false`)
+- "Select tenant" dropdown → lists all tenants for the property
+- Name* (host full name), Email (optional)
+- Visitor: First Name*, Last Name*, Email (optional)
+- Access: Single-day / Multi-day, From* date, All day toggle
+- Additional info (optional)
+
+**Key mutation — createVisitor:**
+```graphql
+mutation createVisitor($input: CreateVisitorInput!) {
+  createVisitor(input: $input) {
+    _id
+    email
+    comment
+    startDate
+    endDate
+  }
+}
+```
+Variables for "Not a contact" mode:
+```json
+{
+  "input": {
+    "companyId": "PROPERTY_ID",
+    "tenantId": "TENANT_ID",
+    "firstName": "Visitor First",
+    "lastName": "Visitor Last",
+    "startDate": "2026-03-21",
+    "arrivalTime": { "isAllDay": true },
+    "comment": "optional note"
+  }
+}
+```
+Variables for "Existing contact" mode (use `contactId` instead of `tenantId`/`firstName`/`lastName`):
+```json
+{
+  "input": {
+    "companyId": "PROPERTY_ID",
+    "contactId": "CONTACT_ID",
+    "startDate": "2026-03-21",
+    "arrivalTime": { "isAllDay": true }
+  }
+}
+```
+For multi-day: add `"endDate": "2026-03-25"`.
+
+**Note**: `createVisitor` returns `Unauthorized` for properties where your user doesn't have visitor management permission. Use a property where the logged-in user is a manager/admin.
+
+**Delete/cancel visitors**: Mutation names not yet confirmed. Capture via GQL interceptor from visitor list actions.
+
+**Finding a property with tenants (for test):**
+- Westside Commons: `companyId = 69be7bbe633d48b012df1d7b` → 3 tenants (Creative Collective Inc., West End Technologies, Westside Fitness Club)
+- מגדלי ארלוזרוב: `companyId = 5JQSqoQ3vKxNtg3Ko` → 9 tenants
+
+---
+
+## Page Map: Amenities (discovered 2026-03-21)
+
+**URLs:**
+- List (Bookings tab): `/amenities#amenity-bookings`
+- List (Manage tab): `/amenities#manage-amenities`
+- Create amenity: `/amenity/create`
+- Edit amenity: `/amenity/<amenityId>/edit` (inferred)
+
+**Tab 1 — Bookings:**
+- Table columns: Amenity, Status, Booking Time, Created Date, Contact
+- View toggle: Table | Calendar
+- Filters: Amenity (dropdown), Booking status (dropdown), Contact (dropdown)
+- Button: "+ Book amenity" → navigates to booking create form
+
+**Tab 2 — Manage amenities:**
+- Table columns: Name, Building, Description, Assigned Users
+- Button: "+ Add amenity" → `/amenity/create`
+
+**Create amenity form fields (Settings tab):**
+- Amenity Gallery (up to 15 images)
+- Name* (required)
+- Building* (required) — dropdown
+- Maximum occupancy (number)
+- Description* (required)
+- Assigned user — dropdown
+- Time slot duration (default: 30 min)
+- Cost (USD per booking)
+- Schedule: per day of week (Sun–Sat), each with "Add time" ranges
+- Availability rules: Booking window (min/max advance in days), Time buffer (before/after, default 15 min), Max duration per booking
+- Link amenities with shared space
+
+**Create amenity form — second tab: Booking questions** (questions shown to users when booking)
+
+**Key GQL queries on amenity pages:**
+```graphql
+# List amenities (Manage tab)
+query amenities($companyId: String!, $skip: Int!, $limit: Int!) {
+  amenities(companyId: $companyId, skip: $skip, limit: $limit) {
+    amenities { ...AmenityItem  createdAt  locationName }
+    hasNext
+    totalCount
+  }
+}
+# AmenityItem fields: _id, name, buildingId, locationName, defaultAssignedUsers,
+# images, image, description, roomEmailAddress, maxPeopleNumber,
+# bookingTimes { dayOfWeek, timeRanges { start, end, isBillable } },
+# timeSlotDuration, timeSlotPrice, bookingInAdvanceRule { minInAdvance { enabled, value, unit } }
+
+# Booking form queries
+query getAmenityDetails(...)     # get amenity config
+query getAmenityBookingSlots(...)  # available time slots
+query getAmenityBookingCharges(...)  # pricing
+query contacts($input: ContactSearchInput!) { ... }  # contact search for host
+```
+
+**Key mutations:**
+```graphql
+# Create or update amenity (same mutation — presence of _id = update)
+mutation setAmenity($input: AmenityInput!) {
+  setAmenity(input: $input) { ...AmenityItem }
+}
+
+# Delete/archive an amenity
+mutation archiveAmenity($amenityId: String!) {
+  archiveAmenity(amenityId: $amenityId)
+}
+
+# Update a booking (e.g., status, time)
+mutation updateAmenityBooking($amenityBookingId: String!, $input: UpdateAmenityBookingInput!) {
+  updateAmenityBooking(amenityBookingId: $amenityBookingId, input: $input) { _id }
+}
+
+# These exist in schema but return "Invalid query" when called manually:
+# bookAmenity(...)          — create booking
+# deleteAmenityBooking(...) — delete booking
+# cancelAmenityBooking(...) — cancel booking
+# → Capture these via GQL interceptor from the actual "+ Book amenity" UI flow
+```
+
+---
+
+## Page Map: Documents (discovered 2026-03-21)
+
+**URL:** `/documents`
+
+**Layout:**
+- Search bar: Name, Description (free text)
+- Buttons: "+ Add document", "Import documents"
+- Filters: Linked to (dropdown), Status (dropdown), Expiration Date (date picker)
+- Table columns: (checkbox), Name, Tags, Start Date, End Date, Linked To
+- Bulk toolbar: Columns, Export, Delete
+- Right sidebar: Tags panel — lists all tags, "Add" button to create a tag
+
+**Key operations (mutations not yet captured — capture via GQL interceptor):**
+- Create document: "+ Add document" button → form (fields TBD)
+- Import documents: bulk CSV/file import
+- Delete documents: bulk select → Delete button
+- Tags: "Add tag" → creates a tag that can be attached to documents
+
+**TODO for next session**: Navigate to Documents with GQL interceptor active, click "+ Add document", fill form, submit → capture `createDocument` (or equivalent) mutation + its full input shape.
