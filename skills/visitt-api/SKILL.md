@@ -1115,3 +1115,130 @@ The `eventFields` format documented above (`{ companyId, categoryIds }`) is WRON
 **Error: "Similar automation exists"** — The API rejects duplicate automation types per property. Check existing automations before creating.
 
 **Fetch intercept gotcha (2026-03-21):** Apollo caches its fetch reference at module load. Replacing `window.fetch` after load misses Apollo mutations MOST of the time. However, on the `/issues` page, `createWorkOrder` WAS caught by a post-load `window.fetch` override — possibly because the work order mutation uses a different Apollo link or is batched differently. For `createAutomation`, the override did NOT work. To safely intercept mutations: use `window.__APOLLO_CLIENT__` for cache inspection, and probe input types iteratively with `variables: { input: {} }` error messages.
+
+---
+
+## Documents Mutations (2026-03-21)
+
+### deleteDocuments
+```graphql
+mutation deleteDocuments($documentIds: [String!]) {
+  deleteDocuments(documentIds: $documentIds)
+}
+```
+Variables: `{ documentIds: ["<id>", ...] }` — accepts array, bulk delete supported.
+
+### createDocumentTag
+```graphql
+mutation createDocumentTag($companyId: String!, $name: String!) {
+  createDocumentTag(companyId: $companyId, name: $name) {
+    _id name color documentCount __typename
+  }
+}
+```
+Variables: `{ companyId: "...", name: "TagName" }`
+
+### deleteDocumentTag
+```graphql
+mutation deleteDocumentTag($documentTagId: String!) {
+  deleteDocumentTag(documentTagId: $documentTagId)
+}
+```
+Variables: `{ documentTagId: "..." }` — **NOT** `tagId` or `id`, must be `documentTagId`.
+
+---
+
+## Amenity Booking Mutations (2026-03-21)
+
+### createAmenityBooking
+Captured from real UI submit on `/amenity/book`.
+```graphql
+mutation createAmenityBooking($input: CreateAmenityBookingInput!) {
+  createAmenityBooking(input: $input) {
+    issue {
+      _id
+      __typename
+    }
+    __typename
+  }
+}
+```
+Variables:
+```json
+{
+  "input": {
+    "contactId": "<String!>",
+    "amenityId": "<String!>",
+    "comment": "",
+    "companyId": "<String!>",
+    "bookingRange": {
+      "startDate": "2026-03-21T18:00:00.000Z",
+      "endDate": "2026-03-21T21:00:00.000Z"
+    },
+    "customFields": [],
+    "type": "tenant_booking"
+  }
+}
+```
+Notes:
+- `bookingRange` uses ISO timestamps (UTC)
+- Slot selection is a RANGE — click start slot then end slot in UI (range selector, not single)
+- `customFields` = empty array if amenity has no booking questions
+- `type` is always `"tenant_booking"` from the UI
+
+### updateAmenityBookingStatus
+Single mutation handles cancel, approve, and reject.
+```graphql
+mutation updateAmenityBookingStatus($amenityBookingId: String!, $input: UpdateAmenityBookingStatusInput!) {
+  updateAmenityBookingStatus(amenityBookingId: $amenityBookingId, input: $input) {
+    _id
+    status
+    statusText
+    ...IssueAmenityBooking
+    __typename
+  }
+}
+```
+Variables:
+```json
+{
+  "amenityBookingId": "<String!>",
+  "input": {
+    "status": "canceled",
+    "comment": "Reason text"
+  }
+}
+```
+Status values: `"canceled"`, `"approved"`, `"rejected"`
+- Cancel: requires confirmation dialog with reason → `comment` field
+- `amenityBookingId` = the `_id` on the `amenityBooking` object (NOT the issue `_id`)
+
+---
+
+## Visitor Mutations (2026-03-21)
+
+### deactivateVisitor  
+"Cancel permission" button on visitor detail panel.
+```graphql
+mutation deactivateVisitor($visitorId: String!) {
+  deactivateVisitor(visitorId: $visitorId) {
+    _id
+    __typename
+  }
+}
+```
+Variables: `{ visitorId: "<String!>" }`
+- Triggered from "Cancel permission" → confirmation dialog → Confirm
+- Sets visitor status to Expired with today as end date
+
+### deleteVisitor
+Exists on server (confirmed via "Invalid query" probe = whitelisted).
+UI trigger not found in the visitor list or detail panel — may be an admin-only action or in a different UI route.
+Inferred shape (same pattern as deactivateVisitor):
+```graphql
+mutation deleteVisitor($visitorId: String!) {
+  deleteVisitor(visitorId: $visitorId)
+}
+```
+Variables: `{ visitorId: "<String!>" }` — **not confirmed from real UI intercept**
+

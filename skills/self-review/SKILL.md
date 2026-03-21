@@ -236,6 +236,10 @@ you do, but how you present choices, ask questions, and show results.
   spaces?" then "should I add equipment?", say "I'll set up the full building
   structure — floors, spaces, and equipment. OK?"
 
+11. **Slot/range pickers need fiber onClick, not coordinate clicks** — Custom slot pickers (`BookingRangeButton` etc.) require `fiber.memoizedProps.onClick(fakeEvent)` with `nativeEvent: {preventDefault: ()=>{}}`. Confirmation: `isSelected` class appears on button AND a previously hidden section shows. Range selection: clicking two slots selects the full range between them. (2026-03-21)
+
+12. **Confirmation dialogs fire mutations on Confirm, not on action button** — Install interceptor before clicking the action button. Clear buffer before step 1. Mutation fires on step 2 (Confirm/Submit in dialog). (2026-03-21)
+
 (Add new rules here as they're discovered in sessions)
 
 ## General Rules
@@ -260,6 +264,20 @@ These are efficiency rules that apply across all tasks. They accumulate over tim
 5. **Screenshot strategically** — Take a screenshot after actions that change state
    (form submit, navigation, dialog open). Skip screenshots after typing, scrolling,
    or clicking within the same view. (2026-03-17)
+
+6. **GQL interceptor before navigation, not after** — Install the fetch interceptor BEFORE navigating to the target page. Page load fires all initial queries before your JS execution. If you install after, you miss them. Pattern: install → navigate → re-install (SPA wipes window) → read captured. (2026-03-21)
+
+7. **Confirm mutation exists before probing input shape** — Use `mutation { mutationName }` first. "Cannot query field" = doesn't exist → stop. Only probe input shape after confirmed existence. Saves 3-4 wasted API calls per mutation. (2026-03-21)
+
+8. **Don't probe bookAmenity-family mutations directly on Visitt** — They return "Invalid query" for all probe shapes (server-side query whitelisting). Max 1 probe attempt, then switch to GQL interceptor from the real UI flow. (2026-03-21)
+
+9. **Update ALL THREE skill files after every session** — system-learning (cross-system techniques), system-specific skill (Visitt mutations/UI), AND self-review (new rules). This file MUST also update itself. Skipping any one loses the knowledge permanently. The self-review checklist now enforces this. (2026-03-21)
+
+10. **React radio buttons need `.click()`, text inputs need native setter** — For checkboxes/radios use `el.click()`. For text/textarea use React native setter + `dispatchEvent('input')`. Always verify React state updated via screenshot — PropTypes warnings in console = stale state, form won't submit correctly. (2026-03-21)
+
+11. **Slot/range pickers need fiber onClick, not coordinate clicks** — Custom slot pickers (`BookingRangeButton` etc.) require `fiber.memoizedProps.onClick(fakeEvent)` with `nativeEvent: {preventDefault: ()=>{}}`. Confirmation: `isSelected` class appears on button AND a previously hidden section shows. Range selection: clicking two slots selects the full range between them. (2026-03-21)
+
+12. **Confirmation dialogs fire mutations on Confirm, not on action button** — Install interceptor before clicking the action button. Clear buffer before step 1. Mutation fires on step 2 (Confirm/Submit in dialog). (2026-03-21)
 
 (Add new rules here as they're discovered in sessions)
 

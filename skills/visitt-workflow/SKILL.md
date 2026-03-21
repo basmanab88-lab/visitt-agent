@@ -816,3 +816,56 @@ mutation updateAmenityBooking($amenityBookingId: String!, $input: UpdateAmenityB
 - Tags: "Add tag" → creates a tag that can be attached to documents
 
 **TODO for next session**: Navigate to Documents with GQL interceptor active, click "+ Add document", fill form, submit → capture `createDocument` (or equivalent) mutation + its full input shape.
+
+---
+
+## Amenity Booking UI Patterns (2026-03-21)
+
+### Book Amenity Form (`/amenity/book`)
+- Opened as SPA modal overlay (history pushes `/amenity/book`, back-button closes)
+- **Contact field**: standard dropdown, coordinate click works fine
+- **Amenity field**: standard dropdown showing all enabled amenities for the property
+  - "Property feature Amenities is disabled" banner = wrong property. Switch to one with amenities (e.g., "1050 West Pender BGO Demo")
+- **Date input**: hidden text input (`name="date"`, `value="Today"`). Date picker uses native `Date` objects (NOT moment).
+  - To change date via fiber: level 6 onChange takes `new Date('YYYY-MM-DD')` but display shows "Invalid date" — cosmetic bug, form still functions
+  - Today's slots show ALL slots including past ones — form validates past-slot on submit
+- **Slot selection**: `BookingRangeButton` components — range selector (click start, click end)
+  - **Fiber onClick required** — coordinate clicks and `.click()` do NOT update React state
+  - Pattern: `fiber.memoizedProps.onClick({preventDefault:()=>{}, nativeEvent:{preventDefault:()=>{}}, ...fakeEvent})`
+  - Clicking multiple slots selects a RANGE (e.g., click 18:00 then click 20:00 → 18:00-21:00 selected)
+  - `isSelected` class on button = slot is selected in React state
+  - Comment field appears ONLY when a slot is selected (use as confirmation)
+- **Cancel an existing booking**: Click row → opens issue detail panel → find "Cancel" button in booking card → confirmation dialog (requires text reason) → Submit → fires `updateAmenityBookingStatus`
+- **Approve/Reject pending booking**: Approve/Reject buttons appear in-row for Pending bookings
+
+### Finding Booking IDs
+- `amenityBookingId` (for updateAmenityBookingStatus) = `amenityBooking._id` on the issue object
+- NOT the same as the issue `_id`
+
+---
+
+## Documents UI Patterns - Confirmed (2026-03-21)
+
+### Tags Sidebar
+- Tags panel is a RIGHT sidebar in `/documents` — buttons can be off-screen (x > 1657 in 1920px viewport)
+- "Add" button next to Tags opens an inline text input → type tag name → press Enter to create
+- Delete tag: kebab/icon next to tag → confirms `deleteDocumentTag` mutation
+- Tag `_id` = `documentTagId` in the mutation (not `tagId`, not `id`)
+
+### Document Deletion
+- Bulk delete: checkbox rows → "Delete" button in toolbar → fires `deleteDocuments` with array of IDs
+- No individual row delete button — must use bulk toolbar
+
+---
+
+## Visitor UI Patterns - Confirmed (2026-03-21)
+
+### Cancel Permission
+- Open visitor row → "Visitor page" side panel
+- "Cancel permission" button → confirmation dialog ("Are you sure?") → Confirm
+- Fires `deactivateVisitor` mutation
+
+### Delete Visitor
+- UI trigger NOT found in visitor list or detail panel (may be admin-only or different route)
+- `deleteVisitor` mutation confirmed to exist on server (returns "Invalid query" = whitelisted)
+

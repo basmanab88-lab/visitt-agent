@@ -155,3 +155,22 @@ Audit trail of session learnings. The real value lives in the updated skill file
 - Documents mutations: load with interceptor → click "+ Add document" → submit → capture
 - `bookAmenity` input shape: interceptor → "+ Book amenity" UI flow → capture
 - Visitor delete/cancel mutation names
+
+---
+
+## 2026-03-21 — Documents, Amenity Bookings, Visitors mutations + React slot picker
+
+**Bottlenecks**:
+- Date picker fiber: calling level-6 onChange with `new Date()` worked but display showed "Invalid date" — cosmetic bug, form still functioned
+- Slot picker: coordinate clicks and `.click()` don't update React state. Fiber onClick with `nativeEvent.preventDefault` required
+- `bookAmenity` and `cancelAmenityBooking` names were wrong — actual mutations: `createAmenityBooking` + `updateAmenityBookingStatus`
+- `deleteVisitor` UI trigger not found — exists on server but UI access point undiscovered
+- Two `self-review` + `system-learning` updates were MISSING from previous commit — fixed this session
+
+**Skills updated**:
+- `visitt-api`: Added `deleteDocuments`, `createDocumentTag`, `deleteDocumentTag`, `createAmenityBooking`, `updateAmenityBookingStatus`, `deactivateVisitor`, `deleteVisitor` (inferred)
+- `visitt-workflow`: Added Amenity Booking form patterns, Documents tag sidebar, Visitor cancel permission flow
+- `system-learning`: Added React date picker fiber technique, slot/range picker fiber onClick pattern, confirmation dialog interception pattern
+- `self-review`: Added rules #11 (slot picker fiber) and #12 (confirmation dialogs)
+
+**User feedback**: "לא לשכוח שמטרת העל שלנו היא לבצע כמה שיותר פועלות רוחביות על המערכת בזמן הקצר ביותר ובאופן מדויק" — maximize cross-system operations per session

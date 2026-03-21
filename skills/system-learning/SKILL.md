@@ -393,3 +393,163 @@ When starting with any new system, run through this mentally:
 **Work order creation path:**
 - URL: `/issues/issue/create` opens the create dialog directly (no need to click button)
 - Automation creation URL: `/issues/automation/create` — BUT this URL redirects to open work orders list; instead, click the Automation tab → navigate to `#automations` hash first, then the link `href="/issues/automation/automation/create"` works
+
+---
+
+### GQL Mutation Probing Decision Tree (2026-03-21)
+
+When you need to discover if a mutation exists or what its args are, use this decision tree — it's fast and reliable:
+
+**Step 1 — Does the mutation exist?**
+Send: `mutation { mutationName }`
+- `"Cannot query field \"mutationName\" on type \"Mutation\""` → **NOT FOUND**
+- `"Invalid query"` (GRAPHQL_VALIDATION_FAILED) → **EXISTS** (needs args)
+- `"Field \"mutationName\" argument \"X\" of type \"Y!\" is required..."` → **EXISTS** (reveals arg name + type)
+
+**Step 2 — What's the input type?**
+Send: `mutation M($input: FakeType!) { mutationName(input: $input) { _id } }`
+- `"Unknown type \"FakeType\""` → mutation accepts `input` arg; real type name unknown (introspection disabled)
+- `"Unknown argument \"input\""` → mutation uses named args, not `input` object
+
+**Step 3 — What fields does the input type require?**
+Send with `variables: { input: {} }` and the correct type (if known):
+- Error lists each missing required field one by one → iterate, adding each until you get a runtime error (Unauthorized / resolver error) instead of validation error
+
+**"Invalid query" exception**: Some mutations (e.g. `bookAmenity`, `deleteAmenityBooking`, `cancelAmenityBooking` on Visitt) return `"Invalid query"` for ALL probe shapes — even with correct input. This is a custom server-side validator blocking non-whitelisted query documents. Don't waste time probing these; capture via GQL interceptor from the real UI instead.
+
+---
+
+### Lazy Chunk Discovery (2026-03-21)
+
+When you can't find a mutation in the main bundle, find the right lazy chunk:
+```javascript
+// Search main bundle for asset filenames containing the feature name
+const b = window._mainBundle || await fetch('/assets/index-XXXX.js').then(r=>r.text());
+const regex = /assets\/([^"'\s,]+?KEYWORD[^"'\s,]*\.js)/gi;
+const chunks = new Set();
+let m;
+while ((m = regex.exec(b)) !== null) chunks.add(m[1]);
+[...chunks]; // → e.g. ["amenity-form-BiDSyoXm.js", "amenity-booking-form-BVVcnFnK.js"]
+```
+Then fetch each chunk and search for `mutation \w+`:
+```javascript
+fetch(`https://app.example.com/assets/${chunkName}`)
+  .then(r => r.text())
+  .then(t => [...t.matchAll(/mutation\s+(\w+)/g)].map(m => m[1]))
+```
+Note: Not all mutations appear as `mutation X` strings — some are built dynamically. If the chunk has the feature's **queries** but no **mutations**, the mutations are either in the main bundle or called via a shared utility chunk.
+
+---
+
+### React State vs DOM State (2026-03-21)
+
+In React apps, DOM mutations don't update React state. This matters for form filling:
+
+**DON'T** — these update DOM but break React:
+```javascript
+el.click();                    // radio/checkbox — React state stays stale
+el.value = 'text';             // input — React doesn't see the change
+```
+
+**DO** — React native setter hack (works for inputs and textareas):
+```javascript
+function setReactVal(el, val) {
+  const proto = el.tagName === 'TEXTAREA'
+    ? window.HTMLTextAreaElement.prototype
+    : window.HTMLInputElement.prototype;
+  const setter = Object.getOwnPropertyDescriptor(proto, 'value').set;
+  setter.call(el, val);
+  el.dispatchEvent(new Event('input', { bubbles: true }));
+  el.dispatchEvent(new Event('change', { bubbles: true }));
+}
+```
+For radio buttons: use `.click()` to select, then also fire a React synthetic event by clicking the label OR confirm React state updated by checking `input.checked` AND verifying the UI re-rendered (take a screenshot).
+
+**Symptom of stale React state**: React PropTypes warning in console (e.g. "prop `layout` is marked as required but its value is `undefined`"), form submits without firing mutation, form stays on the same page after Submit.
+
+---
+
+### Batch Entity Lookups (2026-03-21)
+
+When you need to find ONE entity with specific properties (e.g., a property that has tenants) from a large set, don't query them sequentially. Use `Promise.all` for a parallel sweep:
+
+```javascript
+const ids = [...]; // all candidate IDs
+Promise.all(ids.map(id =>
+  fetch('/graphql', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query: TENANTS_QUERY, variables: { input: { companyId: id } } })
+  }).then(r => r.json())
+  .then(d => ({ id, count: d.data?.tenants?.tenants?.length || 0 }))
+)).then(results => results.filter(r => r.count > 0));
+```
+Result: finds all properties with tenants in ONE round-trip instead of N sequential queries. Same pattern works for any "find entity with property X" scan.
+
+---
+
+### React Date Picker Fiber Technique (2026-03-21)
+
+Custom date pickers (like the one in Visitt's booking form) wrap a native `<input type="text">` with React state. The fiber props at level 6 contain `onChange` and `date` (native `Date` object, NOT moment).
+
+**Correct approach — call level-6 fiber onChange directly:**
+```javascript
+const input = document.querySelector('input[name="date"]');
+const fiberKey = Object.keys(input).find(k => k.startsWith('__reactFiber'));
+let fiber = input[fiberKey];
+for (let i = 0; i < 30; i++) {
+  if (!fiber) break;
+  if (i === 6 && fiber.memoizedProps?.onChange) {
+    fiber.memoizedProps.onChange(new Date('2026-03-22T12:00:00'));
+    break;
+  }
+  fiber = fiber.return;
+}
+```
+Note: This triggers the slot query for the new date even if the display shows "Invalid date" (cosmetic bug in Visitt's custom picker).
+
+To check what type the date prop is: inspect `fiber.memoizedProps.date.constructor.name` at level 6 — it may be `Date` (native) or a moment object depending on the picker library.
+
+---
+
+### Slot/Range Button Fiber onClick Pattern (2026-03-21)
+
+For custom slot pickers (BookingRangeButton etc.) where `.click()` and coordinate clicks fail to update React state:
+
+```javascript
+const btn = document.querySelectorAll('.BookingRangeButton')[4]; // e.g., 5th slot
+const fiberKey = Object.keys(btn).find(k => k.startsWith('__reactFiber'));
+let fiber = btn[fiberKey];
+let onClick = null;
+for (let i = 0; i < 10; i++) {
+  if (!fiber) break;
+  if (fiber.memoizedProps?.onClick) { onClick = fiber.memoizedProps.onClick; break; }
+  fiber = fiber.return;
+}
+onClick({
+  preventDefault: () => {},
+  stopPropagation: () => {},
+  target: btn,
+  currentTarget: btn,
+  type: 'click',
+  nativeEvent: { preventDefault: () => {}, stopPropagation: () => {} },
+  persist: () => {}
+});
+```
+
+**Confirmation that React state updated**: UI adds `isSelected` class to the button AND a previously hidden section (e.g., Comment field) appears.
+
+**Range selection**: These pickers often select a RANGE not a single slot. Click slot A then slot B → selects A through B. Be aware of this when verifying state.
+
+---
+
+### Confirmation Dialog Pattern (2026-03-21)
+
+Many destructive actions in web apps use a two-step confirmation:
+1. Click action button → dialog appears with "Are you sure?" + optional text input
+2. Click Confirm/Submit in dialog → actual mutation fires
+
+**For GQL interception**: The mutation fires on step 2 (Confirm), not step 1. Install interceptor BEFORE step 1, clear captured buffer before step 1, then check after step 2.
+
+**For forms with reason fields** (e.g., cancel booking reason): Fill the text input first, THEN click Confirm. The reason goes in the mutation's `comment` or `reason` field.
+
