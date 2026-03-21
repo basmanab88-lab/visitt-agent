@@ -40,3 +40,4 @@ Starting point for future comparison:
 - Error rate so far: **0/0** — all operations at 100% success
 | 2026-03-21 14:00 | `work_order_create` | Apex Properties — 14 WOs via API + 1 via UI | 15 | 7s | 2.1/s | buildingId required field. 400ms delay. 0 errors |
 | 2026-03-21 14:10 | `automation_create` | Apex Properties — 4 properties × 2 automations | 8 | 5s | 1.6/s | AutomationInput, 400ms delay. 4 "similar exists" skips |
+| 2026-03-21 15:00 | `tenant_space_assign` | Northgate — 3 tenants × 2-4 leasable spaces each | 8 | 1.2s | 6.7/s | setTenant with locations[isLeased:true], 400ms delay. 0 errors |

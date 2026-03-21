@@ -1242,3 +1242,73 @@ mutation deleteVisitor($visitorId: String!) {
 ```
 Variables: `{ visitorId: "<String!>" }` — **not confirmed from real UI intercept**
 
+---
+
+## Leasable Spaces — Full Concept Guide (verified 2026-03-21)
+
+### What is a Leasable Space?
+
+A **leasable space** is a space with `modelType: "leasable_site"`. It represents a Suite (commercial) or Residential Unit that a tenant can occupy exclusively.
+
+**Space types:**
+- `modelType: "leasable_site"` → Leasable space — can be leased or left vacant
+- `modelType: "site"` → Regular space — common areas, technical rooms, etc.
+- `modelType: "equipment"` → Equipment item
+
+**Leasable space statuses (from UI perspective):**
+- **Leased** = a leasable space currently assigned to a tenant with `isLeased: true`
+- **Vacant** = a leasable space not assigned to any tenant
+
+**Key rules (from product-release Slack, Aug 2024):**
+- A leasable space can only be LEASED by ONE tenant (exclusive)
+- A leasable space can be set as AUTHORIZED for other tenants (for work order creation on sub-leased spaces)
+- This was confirmed in Jan 2026: "Leasable spaces can still only be leased by a single tenant, but they can now also be set as authorized spaces for other tenants"
+
+### Connecting Tenants to Leasable Spaces
+
+Use `setTenant` mutation with `locations` array:
+- `isLeased: true` → Leased space (exclusive occupancy, primary space for tenant)
+- `isLeased: false` → Authorized space (WO creation rights, not exclusive)
+
+**IMPORTANT**: `setTenant` replaces the ENTIRE tenant — always include ALL existing locations + contacts.
+
+### tenants (plural) query — locations field uses NESTED objects (2026-03-21)
+The `tenants` plural query returns locations with nested objects (NOT flat fields):
+```graphql
+query tenants($input: TenantSearchInput!) {
+  tenants(input: $input) {
+    tenants {
+      _id name
+      locations {
+        site { _id name }
+        building { _id }
+        isLeased
+      }
+      contacts { _id }
+    }
+  }
+}
+```
+**NOTE**: This is DIFFERENT from the `tenant` (singular) query which uses flat `{ buildingId siteId isLeased }`.
+If you query locations in the plural `tenants` query using flat fields, you get `GRAPHQL_VALIDATION_FAILED`.
+
+### buildings query — correct syntax (2026-03-21)
+The `buildings` query (NOT `allBuildings`) requires `limit` and `skip`:
+```graphql
+query { buildings(companyId: "PROPERTY_ID", limit: 10, skip: 0) { buildings { _id name } } }
+```
+- Returns `PaginatedBuildings { buildings[] }`
+- `limit` and `skip` are REQUIRED — omitting either causes validation error
+- The old `allBuildings` pattern in docs above may be outdated — use `buildings` with pagination args
+
+### allSites for leasable spaces — use buildingId (2026-03-21)
+To get all sites for a single building (faster and more precise):
+```javascript
+// Use buildingId, not companyId
+const res = await fetch('/graphql', {
+  method: 'POST', headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify({ query: `query { allSites(input: { buildingId: "BUILDING_ID" }) { _id name modelType } }` })
+}).then(r => r.json());
+const leasable = res.data.allSites.filter(s => s.modelType === 'leasable_site');
+```
+

@@ -869,3 +869,34 @@ mutation updateAmenityBooking($amenityBookingId: String!, $input: UpdateAmenityB
 - UI trigger NOT found in visitor list or detail panel (may be admin-only or different route)
 - `deleteVisitor` mutation confirmed to exist on server (returns "Invalid query" = whitelisted)
 
+---
+
+## Tenant-Space Relationship UI (verified 2026-03-21)
+
+### URL Patterns
+
+| Page | Correct URL | Notes |
+|------|------------|-------|
+| My Property (building spaces view) | `/building/:buildingId#spaces` | NOT `/my-property/building/:buildingId` (404) |
+| Tenants list for a property | `/tenants#tenants` (after property context set) | Or navigate via sidebar |
+| Tenant profile → Spaces tab | `/tenant/:tenantId?activeSideMenuItem=locations` | Shows leased + authorized spaces |
+
+### Tenant Profile → Spaces tab
+- Left nav shows: Overview, Contacts, **Spaces**, Documents, Billing, Super admin data
+- "Spaces" tab (`activeSideMenuItem=locations`) has two sections:
+  - **Leased spaces** — spaces with `isLeased: true` (exclusive occupancy, labeled "Leased space")
+  - **Authorized spaces** — spaces with `isLeased: false` (WO creation rights, labeled "Authorized space")
+- Breadcrumb path per space: `Building Name > Floor Name > Suite Name`
+- "+ Leased spaces" button to add from UI; same result as `setTenant` mutation with `isLeased: true`
+
+### Tenants List table columns
+- Name, Leased Spaces (comma-separated suite names), Status, Contacts, External ID, Signed Up To Visitt+
+- "Status: Current" filter is applied by default
+- Leased spaces column truncates with "..." after 2-3 entries (full list only in tenant detail)
+
+### Leasable vs Regular Spaces in My Property
+- My Property → Spaces tab shows ALL spaces (leasable + regular)
+- Filter by Type to see only leasable spaces
+- Space creation dialog has "Leasable space" toggle → sets `modelType: "leasable_site"`
+- Spaces named "Suite" or "Residential Unit" are auto-classified as leasable by the system
+

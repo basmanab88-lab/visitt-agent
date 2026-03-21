@@ -174,3 +174,22 @@ Audit trail of session learnings. The real value lives in the updated skill file
 - `self-review`: Added rules #11 (slot picker fiber) and #12 (confirmation dialogs)
 
 **User feedback**: "לא לשכוח שמטרת העל שלנו היא לבצע כמה שיותר פועלות רוחביות על המערכת בזמן הקצר ביותר ובאופן מדויק" — maximize cross-system operations per session
+
+---
+
+## 2026-03-21 (session 2) — Leasable Space Assignment (Northgate Office Park)
+
+**Task**: Connect 3 tenants to 8 leasable spaces in Northgate Office Park on staging
+
+**Bottlenecks**:
+- `tenants` plural query with `locations { siteId buildingId }` fails — must use nested `{ site { _id } building { _id } }`. Cost: 1 failed attempt.
+- `buildings` query needs `limit` and `skip` even for simple lookup. Cost: 1 failed attempt.
+- `/my-property/building/:id` 404s — correct path is `/building/:id#spaces`. Learned quickly.
+
+**Skills updated**:
+- `visitt-api`: Added full leasable space concept guide, buildings query syntax fix, tenants plural locations field correction, allSites with buildingId pattern
+- `visitt-workflow`: Added tenant-space UI patterns, URL map, Spaces tab structure, leased vs authorized display
+
+**Performance**: 3 setTenant mutations in ~1.2s (400ms delay). 0 errors.
+
+**User feedback**: "understand everything about the relationship between my property and tenants, and of course update your git"
