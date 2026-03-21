@@ -900,3 +900,147 @@ mutation updateAmenityBooking($amenityBookingId: String!, $input: UpdateAmenityB
 - Space creation dialog has "Leasable space" toggle → sets `modelType: "leasable_site"`
 - Spaces named "Suite" or "Residential Unit" are auto-classified as leasable by the system
 
+---
+
+## Settings & Feature Flags Map (discovered 2026-03-22)
+
+There are **two distinct settings levels** in Visitt. Each has a different URL pattern and different purpose.
+
+---
+
+### Level 1: Customer-Level Settings
+**URL**: `/customer/[customer_slug]#settings` (e.g., `/customer/apex_properties#settings`)
+**How to reach**: Customers (Admin) → search customer → click arrow → Settings tab
+
+This is the **account-wide** configuration. Sections:
+
+| Section | What's there |
+|---|---|
+| **General** | Default Timezone, Country, Language, Terminology, Date format (MDY vs DMY), Time format (AM:PM vs 24h), First work day (Sun/Mon), Currency ($, ₪, €, C$), Measurement system (Imperial/Metric) |
+| **Features & Notifications** | Toggles: SMS notifications, Email notifications, Mobile Calendar, Issue Set External Reporter, Templates library, SLA |
+| **Live Translate** | Toggle: "Enable Live Translate on work orders" — AI translates work order chat messages in real time based on user language |
+| **SSO** | "Enable SSO" button — allows login via Okta, Azure, Google |
+| **Integrations** | Set SFTP Integration, Set MRI Integration, Set up Yardi Integration |
+| **Import** | Import One (property data from external systems), Import inspections (Excel by Property Name column), Import users (Excel bulk) |
+| **Danger zone** | Status dropdown (New/Active/etc.) — affects demo data reset behavior; Move a property to a different customer |
+
+---
+
+### Level 2: Property-Level Super-Admin (Feature Flags)
+**URL**: `/company/[property_id]#settings`
+**How to reach**: Customers (Admin) → customer → Properties tab → click property name → **Super-Admin tab**
+
+This is where **Feature Flags** live. The page has **two sections**:
+
+#### Features (Main Feature Flags)
+
+These control which major product areas are active for this property. Parent flag must be ON for children to work.
+
+| Feature Flag | Sub-flags | Status (Apex Tower) | What it does |
+|---|---|---|---|
+| **Tenants** | | ✅ ON | Enables the Tenants module — tenant directory, contacts, leases |
+| → Amenities | | ❌ OFF | Enables Amenities booking for tenants in the tenant app |
+| → Broadcasts | | ✅ ON | Enables sending broadcast messages to tenants |
+| → Packages | | ❌ OFF | Enables package tracking module |
+| → Visitor management | | ❌ OFF | Enables visitor pre-registration via tenant app |
+| **Visitt+** | | ❌ OFF | Enables the white-label tenant app (Visitt+). Must be ON to unlock sub-flags |
+| → Visitt+ custom branding | | ❌ OFF | Custom colors/logo for the Visitt+ app |
+| → Visitt+ custom pages | | ❌ OFF | Custom content pages inside Visitt+ |
+| **Vendors** | | ❌ OFF | Enables vendor management module |
+| **Documents** | | ✅ ON | Enables document management (COI tracking, uploads, etc.) |
+| → Tenant COI | | ❌ OFF | Certificate of Insurance tracking for tenants |
+| → Vendor COI | | ❌ OFF | Certificate of Insurance tracking for vendors |
+| → AI COI Validation | | ❌ OFF | AI automatically validates COI documents |
+| → AI Compliance Check | | ❌ OFF | AI checks compliance rules on COI docs |
+| **Visitt AI** | | ❌ OFF | Master switch for all AI features |
+| → Live Translate | | ❌ OFF | AI translates work order chat messages in real time |
+| **Billing** | | ✅ ON | Enables the Billing module (charges, invoices) |
+
+> **Key rule**: Enabling a child flag when the parent is OFF has no effect. Always enable parent first.
+
+#### Experiments (Beta / Per-Customer Flags)
+
+These are features in development or rolled out selectively. Names with `[Fattal]` or `[Sales]` prefix are customer-specific or team-specific flags.
+
+| Experiment Flag | Status (Apex Tower) | What it does |
+|---|---|---|
+| Amenity Booking Inquiry Flow | ❌ OFF | Alternative UX for booking amenities (inquiry-first instead of instant book) |
+| Deprecated contact fields | ❌ OFF | Shows legacy contact fields that are being phased out |
+| Show inspections with deficiencies on the status page | ❌ OFF | Adds a "deficiencies" section to the property status dashboard |
+| [Fattal] Complete work order review charges notice | ❌ OFF | Customer-specific: sends notice when WO charges are reviewed |
+| [Fattal] Rolling work order automation | ❌ OFF | Customer-specific: automates recurring work orders |
+| Set coi requirements manually | ❌ OFF | Allows manually configuring COI requirements instead of using defaults |
+| Views | ❌ OFF | Enables the "Views" feature (custom saved filters/dashboards) |
+| [Sales] Views AI Prompt | ✅ ON | Sales/demo flag: enables AI prompt UI inside Views |
+| Out of office | ❌ OFF | Enables out-of-office status for users (auto-reassignment of work orders) |
+
+#### Other sections on the Super-Admin page
+
+| Section | What's there |
+|---|---|
+| **Visitt+** | Instructions: "To enable Visitt+ for the company, enable the company feature named 'Visitt+'" |
+| **Metadata** | Visitt vertical (Commercial/Residential/etc.), Hubspot Deal ID, Country, Hubspot vertical — all sync with HubSpot |
+| **Onboarding** | Stage and Date — sync to HubSpot |
+| **Payment** | Date, MRR, Lost At — synced from HubSpot |
+| **Pilot Period** | Date range for the trial period (e.g., 3/23/26 → 5/7/26, 45 days) with Submit button |
+| **Broadcasts monthly limit** | DEFAULT 1000/month; 5000/month (250NIS / $50); 10000/month (450NIS / $95) |
+| **Webhooks** | Add webhook button — for external event subscriptions |
+| **API partners** | Add API partner button |
+| **Add Integration (Accounting)** | Yardi (full sync + push WOs/charges), MRI (full sync + push charges), Rent Manager (full sync + push WOs) |
+| **Add Integration (Building)** | SwiftConnect (QR code access control for 20+ systems), Azure Calendar (sync amenity bookings to room displays) |
+| **Add Integration (Security)** | Contacts SCIM (deprovision users via SCIM v2.0, supports Entra/Okta/Workday) |
+| **App Links** | VendorPM (auto-login link), SV3 Visitor (visitor system), SV3 Vehicle (vehicle system) |
+| **Danger** | Disable property, Anonymize property |
+
+> **See log button**: Next to the "Features" heading there's a "See log" button that shows the full history of every feature flag change — who changed it and when.
+
+---
+
+### Level 3: Property Admin (company-settings)
+**URL**: `/company-settings` (context-sensitive — shows settings for whichever property is selected in top-right dropdown)
+**How to reach**: Admin link in left sidebar OR direct URL
+
+**Tabs**:
+
+| Tab | What's there |
+|---|---|
+| **Users** | List of property users, permissions, positions, assigned properties. Export, Add existing user, Add new user. "Show inactive" toggle |
+| **Tenant App** | Sub-sections: Details, Requests, Tenant app pages, Common areas. Has live preview of tenant app on right side. Visitt+ Live edit link |
+| **Categories** | Work order categories for this property |
+| **Templates** | Work order templates |
+| **Work orders** | Work order settings (SLA, auto-assignment, etc.) |
+| **Inspections** | Inspection configuration |
+| **General** | Logo, Timezone, Language, Office Hours per day (Mon-Sun, "Add time" or "Remove") |
+| **Billing** | Billing configuration for this property |
+
+#### Tenant App > Details
+- Name, Language, Brand color (presets + custom hex), Company logo upload
+- Additional settings: "Send a satisfaction survey upon work order completion" toggle
+- Live preview on right shows real-time appearance of tenant app
+
+#### Tenant App > Requests
+- "Set categories and custom fields" — manage which request categories tenants can see
+- "Select spaces or equipment" dropdown to filter by location
+
+#### Tenant App > Tenant app pages
+- Custom pages visible in the tenant app navigation
+
+#### Tenant App > Common areas
+- Common area configuration for tenant-accessible spaces
+
+> **Navigation gotcha**: The property selector in top-right corner of `/company-settings` controls which property you're editing. Always verify you're on the right property before making changes.
+
+---
+
+### URL Quick Reference for Settings Pages
+
+| Page | URL Pattern | Notes |
+|---|---|---|
+| Customer settings | `/customer/[slug]#settings` | Customer-level, affects all properties |
+| Property Super-Admin (Feature Flags) | `/company/[id]#settings` → Super-Admin tab | Property-level, navigate via customer → Properties |
+| Property Admin | `/company-settings#[tab]` | Context-sensitive per selected property |
+| Property Admin - General | `/company-settings#general` | |
+| Property Admin - Tenant App | `/company-settings?activeSideMenuItem=details#portal` | |
+| Property Admin - Tenant App Requests | `/company-settings?activeSideMenuItem=requests#portal` | |
+| Property Admin - Billing | `/company-settings#billing` | |
+
