@@ -553,3 +553,28 @@ Many destructive actions in web apps use a two-step confirmation:
 
 **For forms with reason fields** (e.g., cancel booking reason): Fill the text input first, THEN click Confirm. The reason goes in the mutation's `comment` or `reason` field.
 
+---
+
+### SPA Context-Sensitive URL Redirects (2026-03-22)
+
+In SPAs like Visitt, some URLs are **context-sensitive** — they redirect based on the currently selected entity (e.g., which property is active), not just the URL hash.
+
+**Example**: In Visitt, navigating to `/company-settings#general` when no property is selected redirects to `/company/[id]#settings` (the Super-Admin page of the last-visited property). This caused 3 wasted navigation attempts.
+
+**Pattern to detect this**: If you navigate to a URL and end up somewhere different, check:
+1. Is there a context selector (e.g., property dropdown in top-right)?
+2. Does the app remember "last visited" context?
+3. Does the `#hash` get replaced by a query param (e.g., `?activeSideMenuItem=...`)?
+
+**Rule**: When a redirect happens unexpectedly, use `get_page_text` immediately to understand where you landed before trying to navigate again. Don't retry the same URL — understand the redirect first.
+
+---
+
+### `get_page_text` as Efficient Content Harvesting (2026-03-22)
+
+When the goal is to **learn the structure of a page** (not click anything), `get_page_text` captures ALL content in a single call — including content below the fold that would require multiple scrolls to see. This is much faster than scrolling + screenshot for learning tasks.
+
+**Use `get_page_text` when**: You want to catalog all settings, options, labels, or flags on a page.
+**Use screenshots when**: You need to see the visual state (toggles ON/OFF, selected items, colors).
+**Use both when**: You need content AND visual state (e.g., which feature flags are enabled).
+

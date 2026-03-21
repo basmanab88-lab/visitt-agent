@@ -193,3 +193,24 @@ Audit trail of session learnings. The real value lives in the updated skill file
 **Performance**: 3 setTenant mutations in ~1.2s (400ms delay). 0 errors.
 
 **User feedback**: "understand everything about the relationship between my property and tenants, and of course update your git"
+
+---
+
+## 2026-03-22 — Learn Settings & Feature Flags (Apex Properties)
+
+**Task**: Navigate to staging Apex Properties, learn all Settings pages and Feature Flags, document everything.
+
+**Bottlenecks**:
+- `git clone` failed once — tried `cd /sessions/[dir]` without permission. Fix: run from working dir directly, no cd needed.
+- SPA redirect confusion — `/company-settings#general` redirected to `/company/[id]#settings` (3 wasted navigation attempts). Fix: use `get_page_text` after unexpected redirect before retrying.
+- `Tenant app pages` sub-section not navigable via URL directly — sub-nav in Tenant App tab doesn't always respond to direct URL.
+
+**What worked well**:
+- `get_page_text` harvested ALL feature flags from the Super-Admin page in one call (faster than 8+ scroll+screenshot cycles)
+- Screenshots used only where visual state mattered (which toggles are ON/OFF)
+
+**Skills updated**:
+- `visitt-workflow`: Added full Settings & Feature Flags map (3 levels: Customer, Property Super-Admin, Property Admin). Feature flags table with descriptions, Experiments table, URL quick reference.
+- `system-learning`: Added SPA context-sensitive redirect pattern, `get_page_text` vs screenshot guidance.
+
+**User feedback**: "קדימה תעדכן את מה שלמדת" (triggered end-of-session self-review)
