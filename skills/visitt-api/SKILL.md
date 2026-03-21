@@ -836,3 +836,71 @@ This is the sequence for creating a complete demo property setup using the inter
 - Pagination patterns for large datasets
 - Build a "tear down" script to delete all entities created by the demo script
 - Nest sub-spaces under parent spaces via `changeSitesLocation` (same mutation, use parent space ID as `parentSiteId`)
+
+## createAssignment — CRITICAL Corrections (verified 2026-03-21)
+
+**`completionPolicy: "end_of_unit"` FAILS** → error: "Missing inspection completion defenition of until end of unit"
+
+Use `completionPolicy: "iso_duration"` + `completionISODuration` instead:
+| Frequency | `interval` | `completionISODuration` |
+|-----------|-----------|------------------------|
+| Daily | `"day"` | `"PT24H"` ✅ verified |
+| Biweekly | `"biweekly"` | `"P14D"` (inferred, unverified) |
+| Weekly | `"week"` | `"P7D"` (inferred, unverified) |
+| Monthly | `"month"` | `"P1M"` (inferred, unverified) |
+
+**Minimal working createAssignment (verified 2026-03-21):**
+```json
+{
+  "input": {
+    "companyId": "PROPERTY_ID",
+    "name": "Inspection Name",
+    "interval": "day",
+    "startDate": "2026-03-21",
+    "siteIds": ["SITE_ID"],
+    "daysInWeek": [0,1,2,3,4,5,6],
+    "completionPolicy": "iso_duration",
+    "completionISODuration": "PT24H",
+    "plannedInInterval": 1,
+    "items": [{ "type": "checkbox", "name": "Check item text" }]
+  }
+}
+```
+Simple items: `{ type, name }` objects directly in `items` array — accepted by server (no `sites_tasks` wrapper needed for basic inspections).
+
+**deleteAssignment returns String! — no subfields:**
+```graphql
+mutation { deleteAssignment(assignmentId: "ASSIGNMENT_ID") }
+# ❌ WRONG: { deleteAssignment(...) { _id } }  ← fails
+```
+
+**assignment query (single inspection by ID):**
+```graphql
+query { assignment(assignmentId: "ID") {
+  _id name interval completionPolicy completionISODuration plannedInInterval daysInWeek startDate
+}}
+```
+
+## allUsers query — verified 2026-03-21
+```graphql
+query { allUsers(companyId: "PROPERTY_ID") { _id name } }
+```
+
+## allCompanies query (alternative to companies) — verified 2026-03-21
+```graphql
+query { allCompanies(customerId: "CUSTOMER_SLUG") { _id name } }
+```
+`allCompanies` = string arg (slug). `companies` = array arg. Both return all properties for a customer.
+
+## Getting Sites per Property — Correct Approach (2026-03-21)
+
+- `allSites(companyId: ...)` → ❌ "Unknown argument"
+- `allSites(buildingId: ...)` → ❌ "Unknown argument"
+- `allSites` no args → returns empty []
+- `allSites(input: { companyId: ... })` → documented in skill above, may work per-session
+
+**Reliable approach — query sites via building:**
+```graphql
+query { building(buildingId: "BUILDING_ID") { _id name sites { _id name } } }
+```
+Flow: `allBuildings(companyId)` → get buildingIds → `building(buildingId) { sites {} }` per building.
