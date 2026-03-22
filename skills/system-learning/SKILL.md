@@ -578,3 +578,75 @@ When the goal is to **learn the structure of a page** (not click anything), `get
 **Use screenshots when**: You need to see the visual state (toggles ON/OFF, selected items, colors).
 **Use both when**: You need content AND visual state (e.g., which feature flags are enabled).
 
+
+---
+
+### Web Component Inputs (Ionic / Stencil) — Shadow DOM Gotchas (2026-03-22)
+
+Some UI frameworks (Ionic, Stencil, Lit) use **Web Components with Shadow DOM**. Standard DOM queries don't penetrate the shadow boundary.
+
+**Problem 1 — `ion-button` not found via querySelectorAll('button')**:
+Ionic's `<ion-button>` renders a real `<button>` inside its shadow root, but `document.querySelectorAll('button')` returns nothing. Use:
+```javascript
+document.querySelector('ion-button').click();
+// or for multiple:
+document.querySelectorAll('ion-button')[n].click();
+```
+
+**Problem 2 — `ion-textarea` value not registering in React**:
+Setting `.value` directly on an `<ion-textarea>` (or its shadow child) doesn't trigger React's synthetic event system. Pattern that works:
+```javascript
+const ionTextarea = document.querySelector('ion-textarea');
+const nativeTextarea = ionTextarea.shadowRoot?.querySelector('textarea') || ionTextarea;
+nativeTextarea.value = 'your text';
+nativeTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+nativeTextarea.dispatchEvent(new Event('change', { bubbles: true }));
+```
+
+**General rule**: If a component is a Web Component (custom element with a hyphen in the tag name like `ion-button`, `mwc-button`, `sl-input`), always check whether standard DOM APIs work on it. If they don't, either:
+1. Query the shadow root: `el.shadowRoot.querySelector('input')`
+2. Call the component's own API: `el.value = ...; el.dispatchEvent(...)`
+3. Use the React fiber approach to invoke onClick directly (see React Fiber section above)
+
+---
+
+### Apollo Cache as Instant Data Source (2026-03-22)
+
+When you're already on a page that fetched data, the Apollo cache contains it. Reading from cache is ~0ms vs. a new network query.
+
+**Pattern — extract all items of a type**:
+```javascript
+const cache = window.__APOLLO_CLIENT__.cache.extract();
+// All amenities:
+const amenities = Object.entries(cache)
+  .filter(([k]) => k.startsWith('Amenity:'))
+  .map(([k, v]) => v);
+// All tenants:
+const tenants = Object.entries(cache)
+  .filter(([k]) => k.startsWith('Tenant:'))
+  .map(([k, v]) => v);
+```
+
+**Pattern — check what queries were made** (ROOT_QUERY):
+```javascript
+const rootQuery = window.__APOLLO_CLIENT__.cache.extract()['ROOT_QUERY'];
+// Shows all query keys — useful for understanding what data is available
+Object.keys(rootQuery).filter(k => k !== '__typename');
+```
+
+**Caveat**: Cache contains only fields that the component queried. If a field is missing, run a fresh query with `fetchPolicy: 'network-only'` to re-fetch with that field.
+
+---
+
+### SPA + Two-System Architecture Pattern (2026-03-22)
+
+When a product has an **admin system** and a **tenant/customer-facing portal** as two separate SPAs (like Visitt admin ↔ Visitt+), changes in one don't immediately reflect in the other because they have separate Apollo clients and caches.
+
+**When you create/update data in the admin**:
+- The admin Apollo cache updates immediately
+- The portal SPA at a different URL has its own cache — it will show the old data until it re-fetches
+- **Fix**: Reload the portal page (or navigate away and back) to trigger a fresh fetch
+
+**Dependency chain mental model**: Before testing the portal, ask: "Did I complete the full setup chain in the admin?" (tenant → contact → leasable space → categories → feature flag). If any step is missing, the portal will fail silently.
+
+**Context drift in admin**: Navigating between different sections of an admin that manages multiple entities (properties, companies) can silently switch the active context. Always verify the active context (breadcrumb, page title, URL) before making changes.

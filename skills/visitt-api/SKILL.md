@@ -433,8 +433,28 @@ query allSites($input: SitesSearchInput) {
   }
 }
 ```
-**Variables:** `{ "input": { "companyId": "PROPERTY_ID" } }` or add `"buildingId"` for single building.
+**Variables:** `{ "input": { "companyId": "PROPERTY_ID" } }`
+
+> ⚠️ **CRITICAL (2026-03-22):** `allSites` does NOT accept `buildingId` in the input — passing it causes `GRAPHQL_VALIDATION_FAILED`. To get sites for a specific building, use the `building(buildingId)` query below instead.
+
 Used to populate space selectors in tenant locations, inspections, etc.
+
+### building (get sites for a specific building) — verified 2026-03-22
+Use this when you need leasable or regular spaces scoped to one building.
+```graphql
+query {
+  building(buildingId: "BUILDING_ID") {
+    _id
+    name
+    sites {
+      _id
+      name
+      modelType
+    }
+  }
+}
+```
+Returns ALL sites in that building (all modelTypes). Filter client-side by `modelType === "leasable_site"` to get leasable spaces. This is the correct alternative to `allSites(input: { buildingId })` which does not work.
 
 ### buildings (get all buildings for a property)
 ```graphql
@@ -1301,14 +1321,122 @@ query { buildings(companyId: "PROPERTY_ID", limit: 10, skip: 0) { buildings { _i
 - `limit` and `skip` are REQUIRED — omitting either causes validation error
 - The old `allBuildings` pattern in docs above may be outdated — use `buildings` with pagination args
 
-### allSites for leasable spaces — use buildingId (2026-03-21)
-To get all sites for a single building (faster and more precise):
+### allSites for leasable spaces — use building(buildingId) NOT allSites (2026-03-22)
+
+> ⚠️ **CORRECTION**: `allSites(input: { buildingId })` causes `GRAPHQL_VALIDATION_FAILED`. `buildingId` is NOT a valid field in `SitesSearchInput`. Use the `building(buildingId)` query instead:
+
 ```javascript
-// Use buildingId, not companyId
+// CORRECT way to get leasable spaces for a building
 const res = await fetch('/graphql', {
   method: 'POST', headers: {'Content-Type': 'application/json'},
-  body: JSON.stringify({ query: `query { allSites(input: { buildingId: "BUILDING_ID" }) { _id name modelType } }` })
+  body: JSON.stringify({
+    query: `query { building(buildingId: "BUILDING_ID") { sites { _id name modelType } } }`
+  })
 }).then(r => r.json());
-const leasable = res.data.allSites.filter(s => s.modelType === 'leasable_site');
+const leasable = res.data.building.sites.filter(s => s.modelType === 'leasable_site');
+```
+
+Alternatively, if you're already on the building page in the browser, read from Apollo cache (faster, no extra fetch):
+```javascript
+const cache = window.__APOLLO_CLIENT__.cache.extract();
+const leasable = Object.entries(cache)
+  .filter(([k, v]) => k.startsWith('Site:') && v.modelType === 'leasable_site')
+  .map(([k, v]) => ({ _id: v._id, name: v.name }));
+```
+
+---
+
+## Amenity API (discovered 2026-03-22)
+
+### amenity — get single amenity
+```graphql
+query {
+  amenity(amenityId: "AMENITY_ID") {
+    _id
+    name
+    description
+    maxPeopleNumber
+    timeSlotDuration
+    timeSlotPrice
+    currency
+    buildingId
+    isActive
+    schedule {
+      day
+      startTime
+      endTime
+    }
+    building { _id name }
+    location { _id name }
+  }
+}
+```
+
+### amenities — get all amenities for a property
+```graphql
+query {
+  amenities(companyId: "COMPANY_ID") {
+    amenities {
+      _id
+      name
+      description
+      buildingId
+      building { _id name }
+    }
+    totalCount
+  }
+}
+```
+
+### setAmenity — create or update amenity
+Pass `_id` to update an existing amenity; omit `_id` to create new.
+```graphql
+mutation setAmenity($input: AmenityInput!) {
+  setAmenity(input: $input) {
+    _id
+    name
+    buildingId
+  }
+}
+```
+**Key input fields** (all from captured network traffic):
+```json
+{
+  "input": {
+    "_id": "AMENITY_ID",
+    "name": "Rooftop Conference Room",
+    "description": "Description text",
+    "buildingId": "BUILDING_ID",
+    "companyId": "COMPANY_ID",
+    "maxPeopleNumber": 20,
+    "timeSlotDuration": 30,
+    "timeSlotPrice": null,
+    "currency": "USD",
+    "schedule": [
+      { "day": 5, "startTime": "08:00", "endTime": "17:00" },
+      { "day": 0, "startTime": "08:00", "endTime": "17:00" }
+    ],
+    "images": [],
+    "isActive": true
+  }
+}
+```
+**Schedule `day` values**: 0=Sunday, 1=Monday, 2=Tuesday, 3=Wednesday, 4=Thursday, 5=Friday, 6=Saturday.
+
+> **CRITICAL**: If you create an amenity with only one day (e.g., Friday=5), it will NOT appear in Visitt+ `/book-amenity` on any other day. Add all required days to the schedule.
+
+### Amenity bookings — query
+Amenity bookings are stored as issues with `type: "amenity_booking"`:
+```graphql
+query {
+  issues(input: { companyId: "COMPANY_ID", type: "amenity_booking" }) {
+    issues {
+      _id
+      status
+      amenityBooking { _id amenity { _id name } startTime endTime }
+      contact { _id name }
+    }
+  }
+}
 ```
 

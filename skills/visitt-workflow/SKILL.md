@@ -19,70 +19,6 @@ The reason this matters: manual clicking through Chrome takes ~3-5 seconds per a
 
 Many pages in Visitt share similar UI components (dropdowns, checkboxes, tables, modals). When you discover a technique that works on one page, note the general approach here so it can be adapted for similar components on other pages. The specific CSS selectors may differ, but the strategy (e.g., "find all checkboxes, filter by label, toggle") transfers.
 
----
-
-## ⚡ Platform Exploration Playbook — Fast Track (2026-03-22)
-
-Use this when asked to "explore the platform", "find all settings", "discover mutations", or "map out what can be done at scale". This is the fastest verified path.
-
-### Step 1: Explore a settings page (2 actions)
-```
-navigate(url) → get_page_text()
-```
-`get_page_text()` in ONE call beats scroll+screenshot×8. Use screenshots only when you need visual toggle states (ON/OFF).
-
-### Step 2: Discover what mutation a toggle fires
-**Do NOT try**: replacing `window.fetch` after page load (Apollo captured the original `fetch` at init — your wrapper is never called).
-**Do NOT try**: probing mutation names directly (server-side whitelisting returns "Invalid query" for all guesses).
-
-**DO THIS directly** — Before/After Features Diff (3 API calls, ~5 seconds):
-```javascript
-const gql = (q, v) => fetch('/graphql', {
-  method: 'POST', headers: {'Content-Type': 'application/json'}, credentials: 'include',
-  body: JSON.stringify({ query: q, variables: v })
-}).then(r => r.json());
-
-// 1. Snapshot before
-const before = await gql('{ company(companyId: "ID") { features } }');
-const beforeSet = new Set(before.data.company.features);
-
-// 2. Click the toggle via React fiber (not coordinate click)
-const btns = Array.from(document.querySelectorAll('button')).filter(btn => {
-  const r = btn.getBoundingClientRect();
-  return r.width > 30 && r.width < 65 && r.height > 15 && r.height < 40 && r.y > 100 && r.y < 1500;
-});
-const key = Object.keys(btns[N]).find(k => k.startsWith('__reactFiber'));
-let fiber = btns[N][key];
-while (fiber) {
-  if (fiber.memoizedProps?.onClick) { fiber.memoizedProps.onClick({nativeEvent:{preventDefault:()=>{}},preventDefault:()=>{},stopPropagation:()=>{}}); break; }
-  fiber = fiber.return;
-}
-await new Promise(r => setTimeout(r, 1200));
-
-// 3. Snapshot after — diff = feature key
-const after = await gql('{ company(companyId: "ID") { features } }');
-const added = after.data.company.features.filter(f => !beforeSet.has(f));
-const removed = [...beforeSet].filter(f => !after.data.company.features.includes(f));
-console.log('added:', added, 'removed:', removed); // added[0] = feature name
-
-// 4. Revert
-if (added.length) await gql(`mutation updateCompanyFeature($companyId: String!, $feature: CompanyFeature!, $value: Boolean!) { updateCompanyFeature(companyId: $companyId, feature: $feature, value: $value) { _id } }`,
-  { companyId: 'ID', feature: added[0], value: false });
-```
-
-### Step 3: Bulk-apply a feature to all properties of a customer (1 query + N mutations)
-See "Bulk Operations — Ready-to-Use Code Snippets" section below. Everything is ready-to-paste.
-
-### Known feature keys already mapped
-All toggles use `updateCompanyFeature(companyId, feature, value)`. See full table in "Settings & Feature Flags Map" section. The complete list covers 28+ features across Features tab, Experiments tab, Work orders settings, and Inspections settings.
-
-### Still unknown (as of 2026-03-22)
-- "Show building external Key in work order form" toggle — NOT a feature flag (uses different mutation, name unknown)
-- "Require work order acceptance" toggle — NOT a feature flag (uses different mutation, name unknown)
-- "Require logging of work hours to complete an inspection" toggle — NOT confirmed (may be a feature flag)
-
----
-
 ## Deployment Flow: ALWAYS Visualize → Approve → Deploy
 
 **CRITICAL**: Before ANY deployment to Visitt, you MUST:
@@ -700,6 +636,11 @@ Timing verified: 240 unassigns + 8 deletes + 600 creates = ~75 seconds total on 
 15. **Amenities feature can be disabled per property**: The Bookings tab shows a banner "Property feature Amenities is disabled Edit" if the property hasn't enabled it. To find a property with Amenities active, pick one from the dropdown selector.
 16. **bookAmenity / deleteAmenityBooking return "Invalid query"**: These mutations exist in the schema but return `GRAPHQL_VALIDATION_FAILED: Invalid query` at the field level. They may require special auth or a specific query document format. Capture via GQL interceptor from the real UI flow instead of probing directly.
 17. **Visitor contact selector shows "No results" without contacts**: The "Existing contact" mode host dropdown only lists contacts (people), not tenants. If a property has tenants but no contacts, the dropdown is empty. Switch to "Not a contact" mode which uses the tenant list.
+18. **Company context drift (2026-03-22)**: Navigating between pages (especially Amenities, Tenants, Company-Settings) can silently switch the active property context to a different property. Symptom: page heading or breadcrumb shows a different property name. Fix: navigate to `staging.visitt.io/company/CORRECT_COMPANY_ID#settings` to restore context, then re-navigate to your target page.
+19. **ION-BUTTON is a Web Component — querySelectorAll('button') won't find it (2026-03-22)**: Ionic's `<ion-button>` renders a shadow DOM internally. `document.querySelectorAll('button')` returns nothing for ion-buttons. Use `document.querySelector('ion-button')` or `document.querySelectorAll('ion-button')` directly and call `.click()` on the element.
+20. **ion-textarea value doesn't register with React via standard input (2026-03-22)**: In Ionic+React, setting `.value` on a shadow DOM textarea is ignored unless you also dispatch a synthetic event. Pattern: `const el = textarea.shadowRoot?.querySelector('textarea') || textarea; el.value = 'text'; el.dispatchEvent(new Event('input', { bubbles: true }));`
+21. **allSites query does NOT accept buildingId directly (2026-03-22)**: Passing `buildingId` inside the `input` object of `allSites` causes `GRAPHQL_VALIDATION_FAILED`. `allSites` only takes `{ companyId, modelType }`. To get sites for a specific building, use `building(buildingId: "ID") { sites { _id name modelType } }` instead.
+22. **Amenity card not showing in Visitt+ /book-amenity (2026-03-22)**: Even if `amenities { totalCount: 1 }` is in Apollo cache, the amenity card may not render if: (a) the "Amenities" feature flag under Tenants is OFF (check `/company/ID#settings` → Super-Admin → Tenants → Amenities toggle), or (b) the amenity has no time slots configured for the current day of week. Amenities are filtered by available schedule before display.
 
 ---
 
@@ -1110,274 +1051,97 @@ These are features in development or rolled out selectively. Names with `[Fattal
 
 ---
 
-## Work Orders & Inspections Settings — Feature Key Mapping (2026-03-22)
+## Visitt+ Portal — Full Architecture & Relationship to Admin (2026-03-22)
 
-All toggles on the Work Orders tab and Inspections tab use `updateCompanyFeature(companyId, feature, value)` — same mutation as feature flags.
+**Visitt+** is the tenant-facing mobile app (PWA). It runs at a completely separate URL from the admin:
+- **Admin (Visitt)**: `staging.visitt.io` / `app.visitt.io`
+- **Tenant portal (Visitt+)**: `portal-staging.visitt.io/p/{portalId}/home`
 
-### Work orders tab (`/company-settings#issues` → hash becomes `#issues`)
-
-| UI Label | GQL `feature` string | Default (Apex Properties) |
-|---|---|---|
-| Require a category to create a work order | `require_category_to_create_issue` | OFF |
-| Require logging of work hours to complete a work order | `mandatory_work_hours_on_issue` | OFF |
-| Show and enable search by building external Key in work order form | **unknown** (not a feature flag — uses different mutation) | OFF |
-| Enable recurring work orders | `recurring_work_orders` | ON for Apex Tower |
-| Require work order acceptance | **unknown** (not a feature flag — uses different mutation) | OFF |
-
-> **Correction**: `recurring_work_orders` was previously documented as "backend-only (not in UI)". It IS in the UI — it's the "Enable recurring work orders" toggle in the Work orders tab.
-
-### Inspections tab (`/company-settings#inspections`)
-
-| UI Label | GQL `feature` string | Default (Apex Properties) |
-|---|---|---|
-| Require logging of work hours to complete an inspection | unknown | OFF |
-| Allow to reopen missed inspections | `reopen_missed_inspection` | ON for Apex Tower |
-
-> **Correction**: `reopen_missed_inspection` was previously documented as "backend-only (not in UI)". It IS in the UI — it's in the Inspections tab.
-
-### General tab (`/company-settings#general`)
-- Logo upload, Timezone, Language dropdowns
-- Office Hours: per day (Mon-Sun), "Add time" / "Remove" buttons
-- Save button
-
-### Billing tab (`/company-settings?activeSideMenuItem=general#billing`)
-Sub-navigation: **General** | **Tax & Markup** | **Charge codes**
-
-- **General**: "Remit payment to" text field (appears on all work order invoices). "Enable tenant charge approval on work orders" toggle (tenants e-sign approval digitally) — OFF by default.
-- **Tax & Markup**: "Tax rate (%)" — applied to all taxable billable items.
-- **Charge codes**: Manage charge codes for billing/invoicing. "Add charge code" button.
+The `portalId` is a unique ID per property. Find it via Admin → Company-Settings → Tenant App tab → Visitt+ Live edit link → URL contains `/p/{portalId}/`.
 
 ---
 
-## Bulk Operations — Ready-to-Use Code Snippets (2026-03-22)
+### How Admin Actions Flow to Visitt+
 
-### Pattern: Get all property IDs for a customer
-```javascript
-const gql = (q, v) => fetch('/graphql', {
-  method: 'POST', headers: {'Content-Type': 'application/json'}, credentials: 'include',
-  body: JSON.stringify({ query: q, variables: v })
-}).then(r => r.json());
+Everything a tenant sees in Visitt+ is controlled from the Visitt admin. The full dependency chain:
 
-const { data } = await gql('{ customer(customerId: "apex_properties") { companies { _id name features } } }');
-const companies = data.customer.companies;
-// → [{ _id, name, features[] }, ...]
+```
+Visitt Admin                              Visitt+ (Tenant Portal)
+─────────────────                         ─────────────────────────
+1. Create Tenant (setTenant)           →  Tenant exists
+2. Add Contact → link to Tenant        →  Contact can log into Visitt+
+3. Assign Leasable Space to Tenant     →  Contact can create requests
+4. Configure Tenant App → Requests     →  Request categories appear
+   (Company-Settings → Tenant App →
+    Requests → Select spaces/equipment)
+5. Create Amenity + set schedule       →  Amenity appears in /book-amenity
+   (must have slots on TODAY's day of week)
 ```
 
-### Pattern: Bulk apply feature flag to all properties of a customer
-```javascript
-const gql = (q, v) => fetch('/graphql', {
-  method: 'POST', headers: {'Content-Type': 'application/json'}, credentials: 'include',
-  body: JSON.stringify({ query: q, variables: v })
-}).then(r => r.json());
-
-const mutation = `mutation updateCompanyFeature($companyId: String!, $feature: CompanyFeature!, $value: Boolean!) {
-  updateCompanyFeature(companyId: $companyId, feature: $feature, value: $value) { _id features }
-}`;
-
-// Step 1: get all company IDs
-const { data } = await gql('{ customer(customerId: "CUSTOMER_SLUG") { companies { _id name } } }');
-const companies = data.customer.companies;
-
-// Step 2: apply to each (with 300ms delay between calls)
-const results = [];
-for (const co of companies) {
-  const r = await gql(mutation, { companyId: co._id, feature: 'FEATURE_NAME', value: true });
-  results.push({ name: co.name, ok: !r.errors });
-  await new Promise(r => setTimeout(r, 300));
-}
-console.table(results);
-```
-
-### Pattern: Verify feature state across all properties
-```javascript
-const gql = (q) => fetch('/graphql', {
-  method: 'POST', headers: {'Content-Type': 'application/json'}, credentials: 'include',
-  body: JSON.stringify({ query: q })
-}).then(r => r.json());
-
-const { data } = await gql('{ customer(customerId: "apex_properties") { companies { _id name features } } }');
-data.customer.companies.forEach(co => {
-  const hasFeature = co.features.includes('FEATURE_NAME');
-  console.log(co.name + ': ' + (hasFeature ? '✅' : '❌'));
-});
-```
-
-### Apex Properties — All Property IDs (confirmed 2026-03-22)
-| Property | `companyId` |
-|---|---|
-| Apex Tower | `69be7bb1633d48b012df1d5c` |
-| Harborview Center | `69be7bbe633d48b012df1d77` |
-| Meridian Plaza | `69be7bbe633d48b012df1d7f` |
-| Northgate Office Park | `69be7bbe633d48b012df1d83` |
-| Westside Commons | `69be7bbe633d48b012df1d7b` |
-
-Customer slug: `apex_properties`
+If any step is missing, Visitt+ shows errors or empty screens:
+- "You cannot create a request" → contact not linked to tenant, or tenant has no leasable space
+- Empty categories on create-request page → Tenant App → Requests categories not configured
+- No amenity card in /book-amenity → amenity has no schedule for today's day of week, OR Amenities feature flag is OFF
 
 ---
 
-## Super-Admin Property Page — Additional Tabs (2026-03-22)
+### Visitt+ Navigation Map
 
-URL: `/company/[id]#[tab]`
+| Page | URL | Purpose |
+|------|-----|---------|
+| Home | `/p/{portalId}/home` | Dashboard |
+| Book amenity | `/p/{portalId}/book-amenity` | Select amenity → date → slot → confirm |
+| My requests | `/p/{portalId}/requests` | Work order list |
+| Create request | `/p/{portalId}/create-request` | New WO form |
+| Inbox | `/p/{portalId}/broadcasts` | Broadcast messages |
+| Settings | `/p/{portalId}/more/settings` | Contact profile |
 
-| Tab | Hash | What's there |
-|---|---|---|
-| Super-Admin | `#settings` | Features + Experiments + Visitt+ + Metadata + Onboarding + Payment + Pilot Period + Broadcasts limit + Webhooks + API partners + Integrations + App Links + Danger zone |
-| Status | `#status` | Property operational status |
-| Buildings | `#buildings` | Building structure overview |
-| Users | `#users` | User management |
-| Documents | `#documents` | Document management |
-| Automation | `#automations` | WO automation rules (trigger → action) |
-| Users Features | `#users-features` | Per-user feature permission matrix (view_inspections, manage_inspections, documents, renew_ai_documents, add_documents, tenant_coi, vendor_coi, etc.) |
-
-### Automation tab
-- "Add automation" button
-- Current automations for Apex Tower:
-  - New work order opened → Set due date → 3 Days
-  - New work order opened → Set priority → Medium
-  - New work order opened → Set assigned users → No assignees (default)
+Staging Apex Tower portalId: `69bfd1a7633d48b012df1fb5`
 
 ---
 
-## Customer-Level Settings — Full Map (2026-03-22)
+### Create Request — Prerequisites Checklist
 
-URL: `/customer/[slug]#settings`
+ALL of the following must be true before a contact can create a request:
 
-### Settings section
-| Setting | Value (Apex Properties) |
-|---|---|
-| Default Timezone | (-04:00) America/New_York |
-| Default Country | United States |
-| Language | English |
-| Terminology | Terminology (dropdown) |
-| Date format | March 22, 2026 (US format selected) |
-| Time format | AM:PM selected |
-| First work day of the week | Monday |
-| Currency | $ |
-| Measurement system | Imperial |
-
-### Features & Notifications section (toggles)
-- SMS notifications
-- Email notifications
-- Mobile Calendar
-- Issue Set External Reporter
-- Templates library
-- SLA
-- Live Translate (AI real-time translation of WO chat messages)
-
-### SSO
-- Enable SSO (Okta, Azure, Google)
-
-### Integrations
-- Set SFTP Integration
-- Set MRI Integration (for ALL customer properties at once)
-- Set up Yardi Integration (for ALL customer properties at once)
-
-### Import (bulk operations)
-- **Import One**: Import property data from external systems
-- **Import inspections**: Bulk import across all properties using Excel (needs "Property Name" column)
-- **Import users**: Bulk import users across all properties using Excel
-
-### Danger zone
-- **Status**: Change customer operational status (affects demo data reset). Options include "New"
-- **Move a property to a different customer**: Move individual property between customers
+1. ✅ Contact linked to a Tenant (setTenant `contacts: [{_id: contactId}]`)
+2. ✅ Tenant has at least one **leasable space** (`isLeased: true`)
+3. ✅ Tenant App → Requests has categories configured for the portal
+   - Admin → Company-Settings → Tenant App → Requests → "Select spaces or equipment"
+   - Select categories → Save changes
+   - Without this: create-request page shows blank — no categories, can't submit
 
 ---
 
-## Automation Page (2026-03-22)
+### Amenity Card in /book-amenity — Visibility Rules (critical, 2026-03-22)
 
-**URL**: `https://staging.visitt.io/automations`
+Even if the amenity exists and is in Apollo cache (`totalCount: 1`), the card won't render if:
+- The amenity has **no time slots for today's day of week** (e.g., amenity is Friday-only, today is Sunday)
+- The **Amenities feature flag is OFF** (`/company/{id}#settings` → Super-Admin → Tenants → Amenities toggle)
 
-> **Critical**: This page does NOT live under `company-settings`. Navigate directly to `/automations`. The `#automations` hash on company-settings does nothing — wrong URL.
+Fix: edit the amenity at `/amenity/{amenityId}/edit` → add schedule entries for the required days.
 
-The page is **property-scoped** — always confirm the correct property is selected in the top-right selector before creating or reading automations.
-
-### What it shows
-
-Each automation displays as a row:
-```
-[Trigger icon] [When trigger] → [Action icon] [Action type]
-  [Rule row]: [Scope/category] → [Value]
-```
-
-### Creating an automation — full UI flow
-
-Click **"+ Add automation"** (top right). A modal appears with:
-
-**Step 1 — When (trigger)**
-
-| Trigger option | Notes |
-|---|---|
-| `New work order opened` | Default. Fires immediately on creation. |
-| `Work order wasn't seen for` | Requires time input (Minutes/Hours/Days). Auto-defaults "Then" to "Notify users". |
-| `Work order received no response for` | Time-based. |
-| `Work order wasn't completed for` | Time-based. |
-| `Work order was completed` | Fires on completion. |
-
-**Step 2 — Filters (optional, only shown for relevant triggers)**
-
-- **With priority**: Any priority / Low / Medium / High / Critical
-- **In category**: Multi-select dropdown with search. Selecting specific categories scopes the rule only to those. Leave as "Any category" to apply to all.
-
-**Step 3 — Time (for time-based triggers)**
-
-- Input field + unit dropdown: **Minutes / Hours / Days**
-- Example: value=1, unit=Hours → triggers after 1 hour unseen
-
-**Step 4 — Then (action)**
-
-| Action | Sub-fields |
-|---|---|
-| `Set due date` | Number of days |
-| `Set priority` | Priority dropdown: Low / Medium / High / Critical |
-| `Set assigned users` | User multi-select |
-| `Notify users` | Users multi-select (see below) |
-
-**Users dropdown for "Notify users"**:
-- `Work order creator` — notifies whoever opened the WO
-- `Assigned users` — notifies whoever is assigned to the WO ← use this for "notify assignees"
-- Individual users by name (property-level users listed below)
-
-**Submit** saves and closes the modal. A toast "Automation added" confirms success.
-
-### Automation 1: Set priority on category (learned 2026-03-22)
-
-> When: New work order opened → In category: [Electrical, Elevators] → Then: Set priority → High
-
-Steps:
-1. Click "+ Add automation"
-2. Leave "When" as "New work order opened"
-3. Click "In category" → search/check the target categories → close dropdown (Escape)
-4. Click "Then" → select "Set priority"
-5. Click "Select priority" → choose "High"
-6. Submit
-
-### Automation 2: Notify assigned users if unseen (learned 2026-03-22)
-
-> When: Work order wasn't seen for → 1 Hours → Then: Notify users → Assigned users
-
-Steps:
-1. Click "+ Add automation"
-2. Change "When" to "Work order wasn't seen for" (Then auto-fills "Notify users")
-3. Set time input to `1` and unit to `Hours`
-4. Under "Users" → click Select User → check "Assigned users" → close dropdown
-5. Submit
-
-### Performance
-
-Both automations created in ~3 minutes total via UI. API path for automations not yet discovered — intercept if bulk creation is needed.
+**Work orders** created via Visitt+ appear in admin as standard issues (filter by Contact or Tenant in `/issues`).
+**Amenity bookings** appear as `type: "amenity_booking"` at `/amenities#amenity-bookings`.
 
 ---
 
-## Customer Page — Other Tabs (2026-03-22)
+### Tenant App Categories — How to Configure
 
-URL: `/customer/[slug]`
+Per-portal configuration (not shared across properties):
 
-| Tab | Hash | What's there |
-|---|---|---|
-| Properties | `#companies` | All properties for this customer. "Add property" button. Export button. |
-| Buildings | `#buildings` | All buildings across all properties |
-| Work orders | `#issues` | All work orders across all properties |
-| Users (N) | `#users` | All users across all properties |
-| Categories | `#categories` | Work order categories (customer-level) |
-| Settings | `#settings` | Full settings (documented above) |
+1. `staging.visitt.io/company-settings?activeSideMenuItem=requests#portal`
+2. Click **"Select spaces or equipment"**
+3. Select all spaces/categories to expose
+4. **Save changes**
+
+Without this, the Visitt+ create-request page is completely blank.
+
+---
+
+### Portal ID Discovery
+
+The `portalId` ≠ `companyId`. To find it:
+- Admin → Company-Settings → Tenant App → "Visitt+ Live edit" link → URL has `/p/{portalId}/`
+- Or: Apollo cache on admin page → look for `Portal` type objects
 

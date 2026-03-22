@@ -217,47 +217,35 @@ Audit trail of session learnings. The real value lives in the updated skill file
 
 ---
 
-## 2026-03-22 — Full Platform Exploration (company-settings + bulk ops)
+## 2026-03-22 — Visitt+ Portal Exploration (Visitt ↔ Visitt+ Relationship)
 
-**Task**: Explore all undocumented platform areas, discover every action and how to perform it at scale (bulk feature flags, per-property settings, customer-level ops).
+**Task**: Understand and document the full relationship between Visitt admin (staging.visitt.io) and the Visitt+ tenant portal (portal-staging.visitt.io). Use Emma Whitfield from Apex Tower as test tenant. Create a work order from Visitt+, create an amenity, attempt to book it from Visitt+.
 
-**Bottlenecks**:
-- Apollo Client captures `window.fetch` at init — post-load interceptor missed all Work Orders settings mutations (3-4 wasted attempts). Fix: use before/after features diff instead.
-- `read_network_requests` tool needs to be called BEFORE the action to capture it — calling after yields nothing.
-- Some Work Orders settings toggles (Show external key, Require acceptance) don't use `updateCompanyFeature` — different mutation, still unknown.
-- Navigating to Tenant App sub-sections via URL failed — must use JS button.click() after tab load.
-
-**What worked well**:
-- `get_page_text` captured ALL customer settings in one call
-- Before/after features diff pattern discovered `require_category_to_create_issue` and `mandatory_work_hours_on_issue` cleanly
-- Querying `customer { companies { features } }` in one shot gave all 5 property IDs and their feature states
-
-**Skills updated**:
-- `visitt-workflow`: Added Work Orders/Inspections feature key mapping, bulk operation code snippets, Apex Properties company ID table, Super-Admin additional tabs, Customer-level full settings map.
-- `self-review`: Added rules 13-15 (Apollo init capture issue, before/after diff pattern, get_page_text for exploration).
-
-**User feedback**: Ongoing platform exploration session
-
----
-
-## 2026-03-22 — Automation Page: Create Two Automations (Northgate Office Park)
-
-**Task**: Create two automations for Northgate Office Park (staging):
-1. Set priority = High when WO opened in Electrical/Elevators
-2. Notify assigned users if WO unseen for 1 hour
-
-**Bottlenecks**:
-- Automation page not discoverable from company-settings nav — the `#automations` hash does nothing there. URL is `/automations` directly. Wasted ~4 clicks trying company-settings sub-tabs and hash navigation before trying direct URL.
-- Property selector search: user said "Epix Properties" but system shows "Apex Properties" — slight naming discrepancy. Search by property name ("Northgate") bypasses this.
+**What was slow / blockers**:
+1. `allSites(input: { buildingId })` → `GRAPHQL_VALIDATION_FAILED` — wasted 2 attempts before switching to `building(buildingId) { sites }`. Now fixed in visitt-api skill.
+2. `setTenant` mutation shape — wrong field names (`_id` instead of `tenantId`, contacts as strings instead of `[{_id}]` objects). Fixed by capturing from network interceptor.
+3. **Company context drift** — navigating from Amenities to Tenants silently switched active property from Apex Tower to Northgate Office Park. Required navigating to `/company/ID#settings` to reset.
+4. **Tenant App categories empty** — created request showed no categories. Root cause: each portal needs explicit category config at Admin → Company-Settings → Tenant App → Requests. Not obvious from the UI.
+5. **Amenity card not showing in /book-amenity** — amenity existed in Apollo cache (`totalCount: 1`) but card wasn't rendering. Root cause (hypothesized): amenity was scheduled Friday-only, today is Sunday. Portal filters by today's schedule slots. Left unresolved — requires adding Sunday schedule to amenity.
+6. **ION-BUTTON** not found via `querySelectorAll('button')` — Web Component shadow DOM. Fixed: `querySelector('ion-button').click()`.
+7. **ion-textarea** value not triggering React — needed direct `.value` setter + `dispatchEvent(new Event('input', { bubbles: true }))`.
 
 **What worked well**:
-- Direct URL navigation to `/automations` — immediate success
-- Form auto-behavior: selecting "Work order wasn't seen for" trigger automatically sets "Then" to "Notify users" — no extra click needed
-- Multi-select category dropdown has search → no scrolling needed for Electrical/Elevators
-- "Assigned users" is a first-class option in the Users dropdown (not a workaround)
-- Total time for both automations: ~3 minutes via UI
+- Work order creation via Visitt+ succeeded: WO `69bfd761633d48b012df1feb` (Maintenance / Suite 201 / Apex Tower Building / open)
+- Amenity creation via admin UI succeeded: "Rooftop Conference Room" `69bfd863633d48b012df1ff0`
+- Apollo cache extraction for diagnosis — fast way to verify data without extra API calls
 
 **Skills updated**:
-- `visitt-workflow`: Added full Automation Page section — URL, form flow, all trigger/action options, step-by-step for both automation types, gotcha on URL.
+- `visitt-workflow` — Added: gotchas #18-22 (context drift, ion-button, ion-textarea, allSites correction, amenity card visibility). Added new section: "Visitt+ Portal — Full Architecture" (dependency chain, nav map, prerequisites checklist, portal ID discovery, category config flow).
+- `visitt-api` — Fixed: allSites buildingId note (was wrong, now corrected with warning). Added: `building(buildingId)` query. Added: full Amenity API section (amenity query, amenities query, setAmenity mutation with schedule shape, amenity bookings query).
+- `system-learning` — Added: Web Component shadow DOM gotchas (ion-button, ion-textarea). Added: Apollo cache as instant data source pattern. Added: SPA two-system architecture pattern (admin ↔ portal context drift).
 
-**User feedback**: "המטרה שלנו של הלמידה היא שאנחנו כל הזמן נתייעל... בפעם הבאה שאני מבקש ממך לעשות את זה, אני לא רוצה שזה ייקח לנו אותו זמן"
+**User feedback**: "בפעם הבאה אני לא רוצה שכאילו, אחת המטרות של הלמידה היא שבפעם הבאה אתה תגיע לכל האזורים האלה ותבצע פעולות בהרבה פחות זמן" → goal is speed next session, not just documentation.
+
+**Next session — should be faster because**:
+- Full Visitt+ dependency chain documented — no more "why isn't the portal working?" debugging
+- allSites vs building(buildingId) distinction is now clear — no wasted failed queries
+- Amenity schedule = day of week mapping is documented — immediate fix if amenity doesn't show
+- Company context drift pattern documented — instant recognition + fix
+- setTenant full shape captured — no mutation failures
+
