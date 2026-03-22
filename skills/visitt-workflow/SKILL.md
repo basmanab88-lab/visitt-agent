@@ -1044,3 +1044,191 @@ These are features in development or rolled out selectively. Names with `[Fattal
 | Property Admin - Tenant App Requests | `/company-settings?activeSideMenuItem=requests#portal` | |
 | Property Admin - Billing | `/company-settings#billing` | |
 
+---
+
+## Work Orders & Inspections Settings — Feature Key Mapping (2026-03-22)
+
+All toggles on the Work Orders tab and Inspections tab use `updateCompanyFeature(companyId, feature, value)` — same mutation as feature flags.
+
+### Work orders tab (`/company-settings#issues` → hash becomes `#issues`)
+
+| UI Label | GQL `feature` string | Default (Apex Properties) |
+|---|---|---|
+| Require a category to create a work order | `require_category_to_create_issue` | OFF |
+| Require logging of work hours to complete a work order | `mandatory_work_hours_on_issue` | OFF |
+| Show and enable search by building external Key in work order form | **unknown** (not a feature flag — uses different mutation) | OFF |
+| Enable recurring work orders | `recurring_work_orders` | ON for Apex Tower |
+| Require work order acceptance | **unknown** (not a feature flag — uses different mutation) | OFF |
+
+> **Correction**: `recurring_work_orders` was previously documented as "backend-only (not in UI)". It IS in the UI — it's the "Enable recurring work orders" toggle in the Work orders tab.
+
+### Inspections tab (`/company-settings#inspections`)
+
+| UI Label | GQL `feature` string | Default (Apex Properties) |
+|---|---|---|
+| Require logging of work hours to complete an inspection | unknown | OFF |
+| Allow to reopen missed inspections | `reopen_missed_inspection` | ON for Apex Tower |
+
+> **Correction**: `reopen_missed_inspection` was previously documented as "backend-only (not in UI)". It IS in the UI — it's in the Inspections tab.
+
+### General tab (`/company-settings#general`)
+- Logo upload, Timezone, Language dropdowns
+- Office Hours: per day (Mon-Sun), "Add time" / "Remove" buttons
+- Save button
+
+### Billing tab (`/company-settings?activeSideMenuItem=general#billing`)
+Sub-navigation: **General** | **Tax & Markup** | **Charge codes**
+
+- **General**: "Remit payment to" text field (appears on all work order invoices). "Enable tenant charge approval on work orders" toggle (tenants e-sign approval digitally) — OFF by default.
+- **Tax & Markup**: "Tax rate (%)" — applied to all taxable billable items.
+- **Charge codes**: Manage charge codes for billing/invoicing. "Add charge code" button.
+
+---
+
+## Bulk Operations — Ready-to-Use Code Snippets (2026-03-22)
+
+### Pattern: Get all property IDs for a customer
+```javascript
+const gql = (q, v) => fetch('/graphql', {
+  method: 'POST', headers: {'Content-Type': 'application/json'}, credentials: 'include',
+  body: JSON.stringify({ query: q, variables: v })
+}).then(r => r.json());
+
+const { data } = await gql('{ customer(customerId: "apex_properties") { companies { _id name features } } }');
+const companies = data.customer.companies;
+// → [{ _id, name, features[] }, ...]
+```
+
+### Pattern: Bulk apply feature flag to all properties of a customer
+```javascript
+const gql = (q, v) => fetch('/graphql', {
+  method: 'POST', headers: {'Content-Type': 'application/json'}, credentials: 'include',
+  body: JSON.stringify({ query: q, variables: v })
+}).then(r => r.json());
+
+const mutation = `mutation updateCompanyFeature($companyId: String!, $feature: CompanyFeature!, $value: Boolean!) {
+  updateCompanyFeature(companyId: $companyId, feature: $feature, value: $value) { _id features }
+}`;
+
+// Step 1: get all company IDs
+const { data } = await gql('{ customer(customerId: "CUSTOMER_SLUG") { companies { _id name } } }');
+const companies = data.customer.companies;
+
+// Step 2: apply to each (with 300ms delay between calls)
+const results = [];
+for (const co of companies) {
+  const r = await gql(mutation, { companyId: co._id, feature: 'FEATURE_NAME', value: true });
+  results.push({ name: co.name, ok: !r.errors });
+  await new Promise(r => setTimeout(r, 300));
+}
+console.table(results);
+```
+
+### Pattern: Verify feature state across all properties
+```javascript
+const gql = (q) => fetch('/graphql', {
+  method: 'POST', headers: {'Content-Type': 'application/json'}, credentials: 'include',
+  body: JSON.stringify({ query: q })
+}).then(r => r.json());
+
+const { data } = await gql('{ customer(customerId: "apex_properties") { companies { _id name features } } }');
+data.customer.companies.forEach(co => {
+  const hasFeature = co.features.includes('FEATURE_NAME');
+  console.log(co.name + ': ' + (hasFeature ? '✅' : '❌'));
+});
+```
+
+### Apex Properties — All Property IDs (confirmed 2026-03-22)
+| Property | `companyId` |
+|---|---|
+| Apex Tower | `69be7bb1633d48b012df1d5c` |
+| Harborview Center | `69be7bbe633d48b012df1d77` |
+| Meridian Plaza | `69be7bbe633d48b012df1d7f` |
+| Northgate Office Park | `69be7bbe633d48b012df1d83` |
+| Westside Commons | `69be7bbe633d48b012df1d7b` |
+
+Customer slug: `apex_properties`
+
+---
+
+## Super-Admin Property Page — Additional Tabs (2026-03-22)
+
+URL: `/company/[id]#[tab]`
+
+| Tab | Hash | What's there |
+|---|---|---|
+| Super-Admin | `#settings` | Features + Experiments + Visitt+ + Metadata + Onboarding + Payment + Pilot Period + Broadcasts limit + Webhooks + API partners + Integrations + App Links + Danger zone |
+| Status | `#status` | Property operational status |
+| Buildings | `#buildings` | Building structure overview |
+| Users | `#users` | User management |
+| Documents | `#documents` | Document management |
+| Automation | `#automations` | WO automation rules (trigger → action) |
+| Users Features | `#users-features` | Per-user feature permission matrix (view_inspections, manage_inspections, documents, renew_ai_documents, add_documents, tenant_coi, vendor_coi, etc.) |
+
+### Automation tab
+- "Add automation" button
+- Current automations for Apex Tower:
+  - New work order opened → Set due date → 3 Days
+  - New work order opened → Set priority → Medium
+  - New work order opened → Set assigned users → No assignees (default)
+
+---
+
+## Customer-Level Settings — Full Map (2026-03-22)
+
+URL: `/customer/[slug]#settings`
+
+### Settings section
+| Setting | Value (Apex Properties) |
+|---|---|
+| Default Timezone | (-04:00) America/New_York |
+| Default Country | United States |
+| Language | English |
+| Terminology | Terminology (dropdown) |
+| Date format | March 22, 2026 (US format selected) |
+| Time format | AM:PM selected |
+| First work day of the week | Monday |
+| Currency | $ |
+| Measurement system | Imperial |
+
+### Features & Notifications section (toggles)
+- SMS notifications
+- Email notifications
+- Mobile Calendar
+- Issue Set External Reporter
+- Templates library
+- SLA
+- Live Translate (AI real-time translation of WO chat messages)
+
+### SSO
+- Enable SSO (Okta, Azure, Google)
+
+### Integrations
+- Set SFTP Integration
+- Set MRI Integration (for ALL customer properties at once)
+- Set up Yardi Integration (for ALL customer properties at once)
+
+### Import (bulk operations)
+- **Import One**: Import property data from external systems
+- **Import inspections**: Bulk import across all properties using Excel (needs "Property Name" column)
+- **Import users**: Bulk import users across all properties using Excel
+
+### Danger zone
+- **Status**: Change customer operational status (affects demo data reset). Options include "New"
+- **Move a property to a different customer**: Move individual property between customers
+
+---
+
+## Customer Page — Other Tabs (2026-03-22)
+
+URL: `/customer/[slug]`
+
+| Tab | Hash | What's there |
+|---|---|---|
+| Properties | `#companies` | All properties for this customer. "Add property" button. Export button. |
+| Buildings | `#buildings` | All buildings across all properties |
+| Work orders | `#issues` | All work orders across all properties |
+| Users (N) | `#users` | All users across all properties |
+| Categories | `#categories` | Work order categories (customer-level) |
+| Settings | `#settings` | Full settings (documented above) |
+

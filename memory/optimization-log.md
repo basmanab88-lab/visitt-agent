@@ -214,3 +214,26 @@ Audit trail of session learnings. The real value lives in the updated skill file
 - `system-learning`: Added SPA context-sensitive redirect pattern, `get_page_text` vs screenshot guidance.
 
 **User feedback**: "קדימה תעדכן את מה שלמדת" (triggered end-of-session self-review)
+
+---
+
+## 2026-03-22 — Full Platform Exploration (company-settings + bulk ops)
+
+**Task**: Explore all undocumented platform areas, discover every action and how to perform it at scale (bulk feature flags, per-property settings, customer-level ops).
+
+**Bottlenecks**:
+- Apollo Client captures `window.fetch` at init — post-load interceptor missed all Work Orders settings mutations (3-4 wasted attempts). Fix: use before/after features diff instead.
+- `read_network_requests` tool needs to be called BEFORE the action to capture it — calling after yields nothing.
+- Some Work Orders settings toggles (Show external key, Require acceptance) don't use `updateCompanyFeature` — different mutation, still unknown.
+- Navigating to Tenant App sub-sections via URL failed — must use JS button.click() after tab load.
+
+**What worked well**:
+- `get_page_text` captured ALL customer settings in one call
+- Before/after features diff pattern discovered `require_category_to_create_issue` and `mandatory_work_hours_on_issue` cleanly
+- Querying `customer { companies { features } }` in one shot gave all 5 property IDs and their feature states
+
+**Skills updated**:
+- `visitt-workflow`: Added Work Orders/Inspections feature key mapping, bulk operation code snippets, Apex Properties company ID table, Super-Admin additional tabs, Customer-level full settings map.
+- `self-review`: Added rules 13-15 (Apollo init capture issue, before/after diff pattern, get_page_text for exploration).
+
+**User feedback**: Ongoing platform exploration session

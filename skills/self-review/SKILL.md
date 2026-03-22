@@ -240,6 +240,12 @@ you do, but how you present choices, ask questions, and show results.
 
 12. **Confirmation dialogs fire mutations on Confirm, not on action button** — Install interceptor before clicking the action button. Clear buffer before step 1. Mutation fires on step 2 (Confirm/Submit in dialog). (2026-03-21)
 
+13. **Apollo Client captures window.fetch at init — post-load interceptor misses mutations** — Replacing `window.fetch` after page load doesn't intercept Apollo Client mutations because Apollo captures the original `fetch` reference at initialization. Use `read_network_requests` tool BEFORE the click, or use the "before/after features array diff" pattern to discover feature keys instead. (2026-03-22)
+
+14. **Use before/after features diff to discover feature keys** — When interceptor can't catch the mutation name, click the toggle, query `company { features }` before and after, diff the arrays. The added/removed item IS the feature key. Then revert via direct API call. Costs ~3 API calls per discovered key. (2026-03-22)
+
+15. **get_page_text is fastest for "what settings exist" tasks** — For learning/exploration tasks where you need to read all settings on a page, `get_page_text` in one call beats scroll+screenshot cycles by 5-10 actions. Use it for any page where you need full content, not specific UI states. (2026-03-22)
+
 (Add new rules here as they're discovered in sessions)
 
 ## General Rules
