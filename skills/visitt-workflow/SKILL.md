@@ -1283,6 +1283,91 @@ URL: `/customer/[slug]#settings`
 
 ---
 
+## Automation Page (2026-03-22)
+
+**URL**: `https://staging.visitt.io/automations`
+
+> **Critical**: This page does NOT live under `company-settings`. Navigate directly to `/automations`. The `#automations` hash on company-settings does nothing — wrong URL.
+
+The page is **property-scoped** — always confirm the correct property is selected in the top-right selector before creating or reading automations.
+
+### What it shows
+
+Each automation displays as a row:
+```
+[Trigger icon] [When trigger] → [Action icon] [Action type]
+  [Rule row]: [Scope/category] → [Value]
+```
+
+### Creating an automation — full UI flow
+
+Click **"+ Add automation"** (top right). A modal appears with:
+
+**Step 1 — When (trigger)**
+
+| Trigger option | Notes |
+|---|---|
+| `New work order opened` | Default. Fires immediately on creation. |
+| `Work order wasn't seen for` | Requires time input (Minutes/Hours/Days). Auto-defaults "Then" to "Notify users". |
+| `Work order received no response for` | Time-based. |
+| `Work order wasn't completed for` | Time-based. |
+| `Work order was completed` | Fires on completion. |
+
+**Step 2 — Filters (optional, only shown for relevant triggers)**
+
+- **With priority**: Any priority / Low / Medium / High / Critical
+- **In category**: Multi-select dropdown with search. Selecting specific categories scopes the rule only to those. Leave as "Any category" to apply to all.
+
+**Step 3 — Time (for time-based triggers)**
+
+- Input field + unit dropdown: **Minutes / Hours / Days**
+- Example: value=1, unit=Hours → triggers after 1 hour unseen
+
+**Step 4 — Then (action)**
+
+| Action | Sub-fields |
+|---|---|
+| `Set due date` | Number of days |
+| `Set priority` | Priority dropdown: Low / Medium / High / Critical |
+| `Set assigned users` | User multi-select |
+| `Notify users` | Users multi-select (see below) |
+
+**Users dropdown for "Notify users"**:
+- `Work order creator` — notifies whoever opened the WO
+- `Assigned users` — notifies whoever is assigned to the WO ← use this for "notify assignees"
+- Individual users by name (property-level users listed below)
+
+**Submit** saves and closes the modal. A toast "Automation added" confirms success.
+
+### Automation 1: Set priority on category (learned 2026-03-22)
+
+> When: New work order opened → In category: [Electrical, Elevators] → Then: Set priority → High
+
+Steps:
+1. Click "+ Add automation"
+2. Leave "When" as "New work order opened"
+3. Click "In category" → search/check the target categories → close dropdown (Escape)
+4. Click "Then" → select "Set priority"
+5. Click "Select priority" → choose "High"
+6. Submit
+
+### Automation 2: Notify assigned users if unseen (learned 2026-03-22)
+
+> When: Work order wasn't seen for → 1 Hours → Then: Notify users → Assigned users
+
+Steps:
+1. Click "+ Add automation"
+2. Change "When" to "Work order wasn't seen for" (Then auto-fills "Notify users")
+3. Set time input to `1` and unit to `Hours`
+4. Under "Users" → click Select User → check "Assigned users" → close dropdown
+5. Submit
+
+### Performance
+
+Both automations created in ~3 minutes total via UI. API path for automations not yet discovered — intercept if bulk creation is needed.
+
+---
+
 ## Customer Page — Other Tabs (2026-03-22)
 
 URL: `/customer/[slug]`

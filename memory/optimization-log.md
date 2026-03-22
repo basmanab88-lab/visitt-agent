@@ -237,3 +237,27 @@ Audit trail of session learnings. The real value lives in the updated skill file
 - `self-review`: Added rules 13-15 (Apollo init capture issue, before/after diff pattern, get_page_text for exploration).
 
 **User feedback**: Ongoing platform exploration session
+
+---
+
+## 2026-03-22 — Automation Page: Create Two Automations (Northgate Office Park)
+
+**Task**: Create two automations for Northgate Office Park (staging):
+1. Set priority = High when WO opened in Electrical/Elevators
+2. Notify assigned users if WO unseen for 1 hour
+
+**Bottlenecks**:
+- Automation page not discoverable from company-settings nav — the `#automations` hash does nothing there. URL is `/automations` directly. Wasted ~4 clicks trying company-settings sub-tabs and hash navigation before trying direct URL.
+- Property selector search: user said "Epix Properties" but system shows "Apex Properties" — slight naming discrepancy. Search by property name ("Northgate") bypasses this.
+
+**What worked well**:
+- Direct URL navigation to `/automations` — immediate success
+- Form auto-behavior: selecting "Work order wasn't seen for" trigger automatically sets "Then" to "Notify users" — no extra click needed
+- Multi-select category dropdown has search → no scrolling needed for Electrical/Elevators
+- "Assigned users" is a first-class option in the Users dropdown (not a workaround)
+- Total time for both automations: ~3 minutes via UI
+
+**Skills updated**:
+- `visitt-workflow`: Added full Automation Page section — URL, form flow, all trigger/action options, step-by-step for both automation types, gotcha on URL.
+
+**User feedback**: "המטרה שלנו של הלמידה היא שאנחנו כל הזמן נתייעל... בפעם הבאה שאני מבקש ממך לעשות את זה, אני לא רוצה שזה ייקח לנו אותו זמן"
