@@ -19,6 +19,70 @@ The reason this matters: manual clicking through Chrome takes ~3-5 seconds per a
 
 Many pages in Visitt share similar UI components (dropdowns, checkboxes, tables, modals). When you discover a technique that works on one page, note the general approach here so it can be adapted for similar components on other pages. The specific CSS selectors may differ, but the strategy (e.g., "find all checkboxes, filter by label, toggle") transfers.
 
+---
+
+## ⚡ Platform Exploration Playbook — Fast Track (2026-03-22)
+
+Use this when asked to "explore the platform", "find all settings", "discover mutations", or "map out what can be done at scale". This is the fastest verified path.
+
+### Step 1: Explore a settings page (2 actions)
+```
+navigate(url) → get_page_text()
+```
+`get_page_text()` in ONE call beats scroll+screenshot×8. Use screenshots only when you need visual toggle states (ON/OFF).
+
+### Step 2: Discover what mutation a toggle fires
+**Do NOT try**: replacing `window.fetch` after page load (Apollo captured the original `fetch` at init — your wrapper is never called).
+**Do NOT try**: probing mutation names directly (server-side whitelisting returns "Invalid query" for all guesses).
+
+**DO THIS directly** — Before/After Features Diff (3 API calls, ~5 seconds):
+```javascript
+const gql = (q, v) => fetch('/graphql', {
+  method: 'POST', headers: {'Content-Type': 'application/json'}, credentials: 'include',
+  body: JSON.stringify({ query: q, variables: v })
+}).then(r => r.json());
+
+// 1. Snapshot before
+const before = await gql('{ company(companyId: "ID") { features } }');
+const beforeSet = new Set(before.data.company.features);
+
+// 2. Click the toggle via React fiber (not coordinate click)
+const btns = Array.from(document.querySelectorAll('button')).filter(btn => {
+  const r = btn.getBoundingClientRect();
+  return r.width > 30 && r.width < 65 && r.height > 15 && r.height < 40 && r.y > 100 && r.y < 1500;
+});
+const key = Object.keys(btns[N]).find(k => k.startsWith('__reactFiber'));
+let fiber = btns[N][key];
+while (fiber) {
+  if (fiber.memoizedProps?.onClick) { fiber.memoizedProps.onClick({nativeEvent:{preventDefault:()=>{}},preventDefault:()=>{},stopPropagation:()=>{}}); break; }
+  fiber = fiber.return;
+}
+await new Promise(r => setTimeout(r, 1200));
+
+// 3. Snapshot after — diff = feature key
+const after = await gql('{ company(companyId: "ID") { features } }');
+const added = after.data.company.features.filter(f => !beforeSet.has(f));
+const removed = [...beforeSet].filter(f => !after.data.company.features.includes(f));
+console.log('added:', added, 'removed:', removed); // added[0] = feature name
+
+// 4. Revert
+if (added.length) await gql(`mutation updateCompanyFeature($companyId: String!, $feature: CompanyFeature!, $value: Boolean!) { updateCompanyFeature(companyId: $companyId, feature: $feature, value: $value) { _id } }`,
+  { companyId: 'ID', feature: added[0], value: false });
+```
+
+### Step 3: Bulk-apply a feature to all properties of a customer (1 query + N mutations)
+See "Bulk Operations — Ready-to-Use Code Snippets" section below. Everything is ready-to-paste.
+
+### Known feature keys already mapped
+All toggles use `updateCompanyFeature(companyId, feature, value)`. See full table in "Settings & Feature Flags Map" section. The complete list covers 28+ features across Features tab, Experiments tab, Work orders settings, and Inspections settings.
+
+### Still unknown (as of 2026-03-22)
+- "Show building external Key in work order form" toggle — NOT a feature flag (uses different mutation, name unknown)
+- "Require work order acceptance" toggle — NOT a feature flag (uses different mutation, name unknown)
+- "Require logging of work hours to complete an inspection" toggle — NOT confirmed (may be a feature flag)
+
+---
+
 ## Deployment Flow: ALWAYS Visualize → Approve → Deploy
 
 **CRITICAL**: Before ANY deployment to Visitt, you MUST:
