@@ -1437,6 +1437,78 @@ query {
       contact { _id name }
     }
   }
+```
+
+---
+
+## Billable Items API (discovered 2026-03-25)
+
+### upsertBillableItem — create or update
+
+```graphql
+mutation upsertBillableItem($input: BillableItemInput!) {
+  upsertBillableItem(input: $input) {
+    _id companyId type name price currencyCode markup markupUnit chargeCode active taxable __typename
+  }
+}
+```
+
+**Variables (create new):**
+```json
+{
+  "input": {
+    "chargeCode": "",
+    "type": "material",
+    "price": 1.23,
+    "name": "Item Name",
+    "active": true,
+    "taxable": false,
+    "currencyCode": "$",
+    "markup": 0,
+    "markupUnit": "fix_price",
+    "companyId": "PROPERTY_ID"
+  }
+}
+```
+
+**Variables (update existing):** Add `"_id": "ITEM_ID"` to the input object.
+
+**Type values:** `material`, `labor`
+
+**Deactivate (no delete mutation available):** Use `upsertBillableItem` with `_id` + `active: false`.
+
+> **CRITICAL:** `deleteBillableItem`, `archiveBillableItem`, `removeBillableItem` are all server-whitelisted and return "Invalid query". Use `active: false` instead.
+
+### billableItems — query list
+
+```graphql
+query billableItems($filters: BillableItemsFilters!, $skip: Int!, $limit: Int!, $sort: String, $sortDirection: SortDirection) {
+  billableItems(filters: $filters, skip: $skip, limit: $limit, sort: $sort, sortDirection: $sortDirection) {
+    items { _id name type price active currencyCode markup markupUnit chargeCode taxable }
+    totalCount
+  }
+}
+```
+
+**Variables:**
+```json
+{
+  "filters": { "companyId": "PROPERTY_ID" },
+  "skip": 0,
+  "limit": 50,
+  "sort": "name",
+  "sortDirection": "ASC"
+}
+```
+
+> **Note:** `sortDirection` uses the `SortDirection` enum type (not `String`). Values: `ASC`, `DESC`.
+
+### Bulk creation pattern
+
+- Use `fetch('/graphql', ...)` from browser console (same-origin, session cookie auth)
+- 400ms delay between calls for stability
+- Achieved: 34 items in ~14s (2.4 items/s)
+- Zero errors at this rate
 }
 ```
 
