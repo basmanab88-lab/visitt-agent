@@ -1,47 +1,65 @@
-# Visitt Agent — Cross-Session Context
+# Visitt Agent — Session Bootstrap
 
-## Who & What
+## Identity
+- **User**: Basman (basman@visitt.io) — Product at Visitt
+- **Language**: Hebrew for conversation, English for code
+- **Platform**: Visitt property management (app.visitt.io / staging.visitt.io)
 
-- **User**: Basman (basman@visitt.io) — product manager at Visitt
-- **Project**: AI agent for automating work on the Visitt property management platform (app.visitt.io)
-- **Language**: Hebrew for conversation, English for code and technical content
+## GitHub Token
+Token is stored in your local memory/CLAUDE.md — do NOT commit it here.
+Get it from: `claude_desktop_config` or ask Basman directly.
 
-## What This Agent Does
+## Session Start — MANDATORY (no exceptions)
 
-Automates tasks on Visitt: building deployment (floors, spaces, equipment, tenants), bulk operations via GraphQL API, browser automation via Chrome, and self-optimization between sessions.
+When the user mentions anything related to Visitt, run this BEFORE doing any work:
+
+```bash
+cd /sessions/$(ls /sessions/ | head -1)
+rm -rf visitt-agent-live
+git clone https://<GITHUB_TOKEN>@github.com/basmanab88-lab/visitt-agent visitt-agent-live 2>&1 | tail -1
+```
+
+If git clone fails (proxy/network), read the skills via browser from:
+`https://github.com/basmanab88-lab/visitt-agent/blob/main/skills/`
+
+Then read these files — in this order — before doing anything else:
+1. `visitt-agent-live/skills/self-review/SKILL.md` — session rules, write protocol
+2. `visitt-agent-live/skills/visitt-api/SKILL.md` — all API mutations and queries
+3. `visitt-agent-live/skills/visitt-workflow/SKILL.md` — UI patterns, URL map, gotchas
+4. `visitt-agent-live/memory/performance-log.md` — benchmarks baseline
+
+The repo is the **single source of truth**. Ignore any locally installed plugin versions — they are outdated.
+
+## Session End — when user says "תשמור מה שלמדנו"
+
+1. Run self-review (defined in `self-review/SKILL.md`)
+2. Update relevant skill files in `visitt-agent-live/` (append only, never delete lines)
+3. Follow the Write Protocol:
+   - `git pull --rebase` before writing
+   - Check for duplicates before adding
+   - Use `[supersedes YYYY-MM-DD]` tag if updating existing info
+   - `git pull --rebase` again before push
+   - `git push`
+4. If git push fails (proxy), offer to push via browser or ask user to relay to Claude Code
 
 ## Non-Negotiable Rules
 
-1. **Visualize before deploy** — Never deploy to Visitt without showing a React JSX preview and getting explicit approval. Flow: Parse → Visualize → Approve → Deploy.
-2. **Self-review after every task** — Invoke `self-review` skill after completing any task. Don't wait to be asked.
-3. **Automate after 2-3 repetitions** — Switch to JavaScript/API after doing the same manual action 2-3 times.
-4. **dummy_id_N format** — When creating floors via `upsertFloors`, IDs must be `dummy_id_0`, `dummy_id_1`, etc. Other formats silently fail.
+1. **Visualize before deploy** — React JSX preview + explicit user approval before ANY deployment to Visitt
+2. **Self-review after every task** — defined in self-review/SKILL.md, follow exactly
+3. **Automate after 2-3 repetitions** — switch to API/JS after doing the same manual action 2-3 times
+4. **dummy_id_N format** — upsertFloors IDs must be `dummy_id_0`, `dummy_id_1`, etc.
+5. **Write protocol** — read self-review/SKILL.md before every push to the repo
 
-## Skills (load when relevant)
+## Key Terms (Basman's shorthand)
+- **פרוס / יאללה** = deploy approved, go ahead
+- **עצור** = stop immediately
+- **תתייעל** = run self-review now
+- **תשמור מה שלמדנו** = end-of-session review + push to GitHub
+- **מעולה!** = positive signal, keep doing what you're doing
 
-| Skill | When to use |
-|---|---|
-| `visitt-api` | Any GraphQL / programmatic Visitt work |
-| `visitt-workflow` | Browser automation, UI navigation, bulk settings |
-| `system-learning` | Starting work on any new/unfamiliar web system |
-| `self-review` | End of session, optimization, "תשמור מה שלמדנו" |
-
-## GitHub Backup
-
-Config: `/sessions/kind-awesome-mendel/mnt/.claude/github-config.json`
-Repo: `https://github.com/basmanab88-lab/visitt-agent`
-Trigger: when user says "תשמור מה שלמדנו" or "גיבוי" — run self-review skill (Step 4 covers the push).
-
-## Memory Files
-
-- `hooks/visitt-context.md` — core rules loaded every session
-- `memory/optimization-log.md` — audit trail of session learnings
-- `skills/*/SKILL.md` — detailed operational knowledge per domain
-
-## Key Technical Facts (updated as learned)
-
-- Auth: Bearer token from `localStorage.getItem('token')` in browser console
-- API base: captured via fetch interceptor — see `visitt-api` skill
-- Floor creation: `upsertFloors` mutation, requires `dummy_id_N` format
-- Concurrency: staging=5/400ms, production=3/800ms
-- Bulk threshold: 5+ entities → use API, not UI
+## Known Property IDs (Staging)
+- Skynet customer: companyId = `69bacea93772df3673fb6f57`, customerId = `skynet`
+- Apex Properties customer slug: `apex_properties`
+- Westside Commons: companyId = `69be7bbe633d48b012df1d7b` (3 tenants)
+- מגדלי ארלוזרוב: companyId = `5JQSqoQ3vKxNtg3Ko` (9 tenants)
+- Staging Apex Tower portalId: `69bfd1a7633d48b012df1fb5`
