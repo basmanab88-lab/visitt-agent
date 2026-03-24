@@ -1145,3 +1145,73 @@ The `portalId` ≠ `companyId`. To find it:
 - Admin → Company-Settings → Tenant App → "Visitt+ Live edit" link → URL has `/p/{portalId}/`
 - Or: Apollo cache on admin page → look for `Portal` type objects
 
+---
+
+## Building Visualization Template (LOCKED — Do Not Improvise)
+
+**Rules:**
+- ALWAYS use this exact template for building previews
+- Only replace the `BUILDING` data object — NEVER change styling/layout/components
+- Design: minimal white tree view, recursive nodes, connecting lines, collapsible
+
+**Design system:**
+| Kind | Dot | Color | Font |
+|------|-----|-------|------|
+| floor | 12px square, blue glow | #3b82f6 | 15px bold |
+| site | 8px circle | #94a3b8 | 13.5px medium |
+| leasable | 8px circle + "להשכרה" tag | #22c55e | 13.5px medium |
+| equipment | 6px circle | #f59e0b | 12.5px regular muted |
+| tenant | inline after arrow | #7c3aed | 11.5px |
+
+**Data structure:**
+```
+BUILDING = {
+  name, address,
+  floors: [{ name, children: [
+    { name, type: "site"|"leasable", tenant?, equipment?: string[], children?: [...] }
+  ]}]
+}
+```
+
+Full JSX template is in `references/automation-builder-template.jsx` (adapt for buildings).
+Only replace the BUILDING data object — never change layout or styling.
+
+---
+
+## Automation Builder Template (LOCKED — Do Not Improvise)
+
+**Purpose**: Visual preview for automation deployment — MUST appear before any deploy.
+
+**Rules:**
+- ALWAYS use the locked template JSX for automation previews
+- Only replace the `PROPERTY_DATA` object — NEVER change styling/layout/components
+- Status `"existing"` = green badge, `"new"` = blue badge
+- The Builder is the MANDATORY approval layer between discussion and deployment
+
+**Workflow (CRITICAL — Never Skip):**
+1. **Talk** — User says what they want
+2. **Update PROPERTY_DATA** — Fill with real data (categories, users, existing automations, new ones as status: "new")
+3. **Present Builder** — User reviews the JSX preview
+4. **User approves** — "שגר" / "תן בראש" / "אשר"
+5. **Deploy** — Only NOW run createAutomation/updateAutomation API calls
+6. **Update Builder** — Change deployed items from `"new"` to `"existing"`
+
+**PROPERTY_DATA structure:**
+```
+{
+  propertyName, companyId,
+  targets: [{ name, id }],
+  categories: [{ id, name }],
+  users: [{ id, name }],
+  existingAutomations: [{
+    id, status: "existing"|"new",
+    eventType, action, actionValue,
+    categories: [], priority: null,
+    triggerDelay: null, officeHours: true,
+  }]
+}
+```
+
+Full JSX template: `references/automation-builder-template.jsx`
+Always copy from the locked template and only replace the PROPERTY_DATA object.
+
