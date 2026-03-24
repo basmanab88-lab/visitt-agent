@@ -249,3 +249,6 @@ Audit trail of session learnings. The real value lives in the updated skill file
 - Company context drift pattern documented — instant recognition + fix
 - setTenant full shape captured — no mutation failures
 
+
+
+<!-- TEST: browser push from Cowork works - delete this line -->
