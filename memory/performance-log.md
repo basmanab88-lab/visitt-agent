@@ -13,6 +13,7 @@ All timed operations logged here. Format: `| date time | task_type | description
 | 2026-03-20 00:00 | `bulk_automation_deploy` | Generic Customer â 30 properties Ã 5 automations | 150 | 24s | 6.25/s | createAutomation, delay=400ms. 0 errors |
 | 2026-03-20 01:50 | `bulk_inspection_deploy` | Skynet â single property, 20 inspections | 20 | 10s | 2.0/s | daily+weekly+monthly mix, delay=400ms. 0 errors |
 | 2026-03-20 02:10 | `property_fetch` | Basman Realty â 12 properties, buildings + sites | 12 props | 3s | 4.0 props/s | parallel fetch, stored in localStorage |
+| 2026-03-25 14:00 | `billable_item_create` | Apex Tower staging — 34 materials from Excel | 34 | 14s | 2.4/s | fetch('/graphql'), delay=400ms. 0 errors |
 | 2026-03-20 02:15 | `bulk_inspection_deploy` | Basman Realty â 12 properties Ã 2 inspections | 24 | 12s | 2.0/s | daily+weekly, per-property site mapping, delay=400ms. 0 errors |
 
 ---
@@ -27,6 +28,7 @@ Starting point for future comparison:
 | `bulk_category_ops` | 600 creates | 25s | 24.0/s |
 | `bulk_automation_deploy` | 150 automations | 24s | 6.25/s |
 | `bulk_inspection_deploy` | 20â24 | 10â12s | 2.0/s |
+| `billable_item_create` | 34 items | 14s | 2.4/s |
 | `property_fetch` (parallel) | 12 props | 3s | 4.0 props/s |
 
 ---
