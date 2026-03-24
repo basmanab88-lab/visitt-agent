@@ -11,7 +11,9 @@ Get it from: `claude_desktop_config` or ask Basman directly.
 
 ## Session Start — MANDATORY (no exceptions)
 
-When the user mentions anything related to Visitt, run this BEFORE doing any work:
+When the user mentions anything related to Visitt, do this BEFORE any work:
+
+**Step 1: Try git clone first**
 
 ```bash
 cd /sessions/$(ls /sessions/ | head -1)
@@ -19,16 +21,24 @@ rm -rf visitt-agent-live
 git clone https://<GITHUB_TOKEN>@github.com/basmanab88-lab/visitt-agent visitt-agent-live 2>&1 | tail -1
 ```
 
-If git clone fails (proxy/network), read the skills via browser from:
-`https://github.com/basmanab88-lab/visitt-agent/blob/main/skills/`
+If git clone succeeds, read these files in order:
+1. `visitt-agent-live/skills/self-review/SKILL.md`
+2. `visitt-agent-live/skills/visitt-api/SKILL.md`
+3. `visitt-agent-live/skills/visitt-workflow/SKILL.md`
+4. `visitt-agent-live/memory/performance-log.md`
 
-Then read these files — in this order — before doing anything else:
-1. `visitt-agent-live/skills/self-review/SKILL.md` — session rules, write protocol
-2. `visitt-agent-live/skills/visitt-api/SKILL.md` — all API mutations and queries
-3. `visitt-agent-live/skills/visitt-workflow/SKILL.md` — UI patterns, URL map, gotchas
-4. `visitt-agent-live/memory/performance-log.md` — benchmarks baseline
+**Step 2: If git clone fails (proxy/403), read via browser instead**
 
-The repo is the **single source of truth**. Ignore any locally installed plugin versions — they are outdated.
+Navigate to each URL and use get_page_text to read the content:
+1. `https://github.com/basmanab88-lab/visitt-agent/blob/main/skills/self-review/SKILL.md`
+2. `https://github.com/basmanab88-lab/visitt-agent/blob/main/skills/visitt-api/SKILL.md`
+3. `https://github.com/basmanab88-lab/visitt-agent/blob/main/skills/visitt-workflow/SKILL.md`
+4. `https://github.com/basmanab88-lab/visitt-agent/blob/main/memory/performance-log.md`
+
+Do NOT skip this step. Do NOT ask the user for the task before reading the skills.
+The skills are mandatory context — without them you will make mistakes.
+
+The repo is the **single source of truth**. Ignore any locally installed plugin versions.
 
 ## Session End — when user says "תשמור מה שלמדנו"
 
@@ -40,7 +50,11 @@ The repo is the **single source of truth**. Ignore any locally installed plugin 
    - Use `[supersedes YYYY-MM-DD]` tag if updating existing info
    - `git pull --rebase` again before push
    - `git push`
-4. If git push fails (proxy), offer to push via browser or ask user to relay to Claude Code
+4. If git push fails (proxy), push via browser:
+   - Navigate to the target file on github.com/basmanab88-lab/visitt-agent
+   - Click the edit dropdown (pencil icon area) to open the editor
+   - Make changes in the editor
+   - Click "Commit changes" → commit directly to main
 
 ## Non-Negotiable Rules
 
