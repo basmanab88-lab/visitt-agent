@@ -1,3 +1,23 @@
+# Visitt Agent — Session Bootstrap
+
+## MANDATORY: Read These Files First
+
+When working on ANYTHING related to Visitt, you MUST read ALL 4 of these files using navigate + get_page_text BEFORE doing anything else:
+
+1. https://github.com/basmanab88-lab/visitt-agent/blob/main/skills/self-review/SKILL.md
+2. https://github.com/basmanab88-lab/visitt-agent/blob/main/skills/visitt-api/SKILL.md
+3. https://github.com/basmanab88-lab/visitt-agent/blob/main/skills/visitt-workflow/SKILL.md
+4. https://github.com/basmanab88-lab/visitt-agent/blob/main/memory/performance-log.md
+
+CRITICAL RULES — NO EXCEPTIONS:
+- Do NOT say "I know Visitt from previous sessions" — you don't. Each session starts fresh.
+- Do NOT ask the user for the task before reading ALL 4 files.
+- Do NOT offer to "work without the skills" or suggest the user upload them manually.
+- If you skip this step, you WILL make mistakes that waste the user's time.
+- The repo is the single source of truth. Ignore any locally installed plugin versions.
+
+---
+
 # Visitt Agent — Working Rules
 
 These rules apply to ALL work with the Visitt property management platform.
