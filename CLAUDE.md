@@ -35,7 +35,12 @@ Navigate to each URL and use get_page_text to read the content:
 3. `https://github.com/basmanab88-lab/visitt-agent/blob/main/skills/visitt-workflow/SKILL.md`
 4. `https://github.com/basmanab88-lab/visitt-agent/blob/main/memory/performance-log.md`
 
-Do NOT skip this step. Do NOT ask the user for the task before reading the skills.
+CRITICAL: You MUST complete Step 1 OR Step 2 before doing ANYTHING else.
+If git clone fails, you MUST immediately open the browser and read all 4 URLs.
+Do NOT say "I know Visitt from previous sessions" — you don't. Each session starts fresh.
+Do NOT ask the user for the task before reading ALL skills.
+Do NOT offer to "work without the skills" or suggest the user upload them manually.
+If you skip this step, you WILL make mistakes that waste the user's time.
 The skills are mandatory context — without them you will make mistakes.
 
 The repo is the **single source of truth**. Ignore any locally installed plugin versions.
