@@ -13,37 +13,19 @@ Get it from: `claude_desktop_config` or ask Basman directly.
 
 When the user mentions anything related to Visitt, do this BEFORE any work:
 
-**Step 1: Try git clone first**
+Open the browser and read ALL 4 of these files using navigate + get_page_text:
+1. https://github.com/basmanab88-lab/visitt-agent/blob/main/skills/self-review/SKILL.md
+2. https://github.com/basmanab88-lab/visitt-agent/blob/main/skills/visitt-api/SKILL.md
+3. https://github.com/basmanab88-lab/visitt-agent/blob/main/skills/visitt-workflow/SKILL.md
+4. https://github.com/basmanab88-lab/visitt-agent/blob/main/memory/performance-log.md
 
-```bash
-cd /sessions/$(ls /sessions/ | head -1)
-rm -rf visitt-agent-live
-git clone https://<GITHUB_TOKEN>@github.com/basmanab88-lab/visitt-agent visitt-agent-live 2>&1 | tail -1
-```
-
-If git clone succeeds, read these files in order:
-1. `visitt-agent-live/skills/self-review/SKILL.md`
-2. `visitt-agent-live/skills/visitt-api/SKILL.md`
-3. `visitt-agent-live/skills/visitt-workflow/SKILL.md`
-4. `visitt-agent-live/memory/performance-log.md`
-
-**Step 2: If git clone fails (proxy/403), read via browser instead**
-
-Navigate to each URL and use get_page_text to read the content:
-1. `https://github.com/basmanab88-lab/visitt-agent/blob/main/skills/self-review/SKILL.md`
-2. `https://github.com/basmanab88-lab/visitt-agent/blob/main/skills/visitt-api/SKILL.md`
-3. `https://github.com/basmanab88-lab/visitt-agent/blob/main/skills/visitt-workflow/SKILL.md`
-4. `https://github.com/basmanab88-lab/visitt-agent/blob/main/memory/performance-log.md`
-
-CRITICAL: You MUST complete Step 1 OR Step 2 before doing ANYTHING else.
-If git clone fails, you MUST immediately open the browser and read all 4 URLs.
+CRITICAL: You MUST read ALL 4 files before doing ANYTHING else.
 Do NOT say "I know Visitt from previous sessions" — you don't. Each session starts fresh.
 Do NOT ask the user for the task before reading ALL skills.
 Do NOT offer to "work without the skills" or suggest the user upload them manually.
 If you skip this step, you WILL make mistakes that waste the user's time.
-The skills are mandatory context — without them you will make mistakes.
 
-The repo is the **single source of truth**. Ignore any locally installed plugin versions.
+The repo is the single source of truth. Ignore any locally installed plugin versions.
 
 ## Session End — when user says "תשמור מה שלמדנו"
 
