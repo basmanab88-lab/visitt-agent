@@ -1,15 +1,15 @@
 ---
 name: visitt-workflow
-description: "Best practices for working with the Visitt property management system (app.visitt.io). Use this skill whenever the user asks to update settings, categories, or configurations across multiple properties in Visitt. Triggers on: Visitt, tenant app, property settings, request categories, bulk property updates, company-settings. Also use for any repetitive browser-based task involving the Visitt platform, even if the specific page or flow isn't documented here yet Ã¢ÂÂ the general principles apply."
+description: "Best practices for working with the Visitt property management system (app.visitt.io). Use this skill whenever the user asks to update settings, categories, or configurations across multiple properties in Visitt. Triggers on: Visitt, tenant app, property settings, request categories, bulk property updates, company-settings. Also use for any repetitive browser-based task involving the Visitt platform, even if the specific page or flow isn't documented here yet ÃÂ¢ÃÂÃÂ the general principles apply."
 ---
 
 # Visitt Property Management - Workflow Best Practices
 
 ## Core Principle: Auto-Optimize Repetitive Actions
 
-When performing any repetitive task (clicking, navigating, filling forms, selecting items across multiple properties), follow this escalation path automatically Ã¢ÂÂ don't wait for the user to say "this is too slow":
+When performing any repetitive task (clicking, navigating, filling forms, selecting items across multiple properties), follow this escalation path automatically ÃÂ¢ÃÂÃÂ don't wait for the user to say "this is too slow":
 
-1. **First 2-3 repetitions**: Do it manually via browser clicks to learn the pattern Ã¢ÂÂ understand the DOM structure, element selectors, and page behavior
+1. **First 2-3 repetitions**: Do it manually via browser clicks to learn the pattern ÃÂ¢ÃÂÃÂ understand the DOM structure, element selectors, and page behavior
 2. **After 2-3 repetitions**: Stop and build automation (JavaScript via `javascript_tool`, batch scripts, etc.) to handle the remaining items
 3. **After the task is done**: Update this skill file with the new technique, including working selectors and code snippets, so future sessions start fast from the first item
 
@@ -19,13 +19,13 @@ The reason this matters: manual clicking through Chrome takes ~3-5 seconds per a
 
 Many pages in Visitt share similar UI components (dropdowns, checkboxes, tables, modals). When you discover a technique that works on one page, note the general approach here so it can be adapted for similar components on other pages. The specific CSS selectors may differ, but the strategy (e.g., "find all checkboxes, filter by label, toggle") transfers.
 
-## Deployment Flow: ALWAYS Visualize Ã¢ÂÂ Approve Ã¢ÂÂ Deploy
+## Deployment Flow: ALWAYS Visualize ÃÂ¢ÃÂÃÂ Approve ÃÂ¢ÃÂÃÂ Deploy
 
 **CRITICAL**: Before ANY deployment to Visitt, you MUST:
 1. Parse the data source (Excel, manual input, etc.)
 2. Generate a **React JSX visualization** showing the building structure
 3. Present it to the user for approval
-4. **Only after explicit approval** Ã¢ÂÂ deploy via API
+4. **Only after explicit approval** ÃÂ¢ÃÂÃÂ deploy via API
 
 Never skip the visualization step. Never deploy without user approval.
 
@@ -96,7 +96,7 @@ Variables:
 }
 ```
 
-**IMPORTANT:** The `_id` format MUST be `dummy_id_N` (e.g., `dummy_id_0`, `dummy_id_1`, `dummy_id_2`). Other formats like `dummy_0`, `dummy_N`, or `d0` will **silently fail** Ã¢ÂÂ the API returns an empty array with no error message. This was discovered through debugging and is not documented anywhere.
+**IMPORTANT:** The `_id` format MUST be `dummy_id_N` (e.g., `dummy_id_0`, `dummy_id_1`, `dummy_id_2`). Other formats like `dummy_0`, `dummy_N`, or `d0` will **silently fail** ÃÂ¢ÃÂÃÂ the API returns an empty array with no error message. This was discovered through debugging and is not documented anywhere.
 
 #### 3. Create Space (Site)
 
@@ -192,21 +192,21 @@ query Building($id: String!) {
 
 | modelType | Hebrew | Description | Example |
 |-----------|--------|-------------|---------|
-| `site` | ÃÂÃÂ¨ÃÂÃÂ | Base space (non-rentable) | Lobby, Hallway, Stairwell |
-| `leasable_site` | ÃÂÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂ©ÃÂÃÂ¨ÃÂ | Rentable unit | Suite 100, Office 201 |
-| `equipment` | ÃÂ¦ÃÂÃÂÃÂ | Equipment/asset | HVAC, Elevator, Generator |
-| `floor` | ÃÂ§ÃÂÃÂÃÂ | Floor level | Ground Floor, Floor 1 |
+| `site` | ÃÂÃÂÃÂÃÂ¨ÃÂÃÂÃÂÃÂ | Base space (non-rentable) | Lobby, Hallway, Stairwell |
+| `leasable_site` | ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂÃÂÃÂ©ÃÂÃÂÃÂÃÂ¨ÃÂÃÂ | Rentable unit | Suite 100, Office 201 |
+| `equipment` | ÃÂÃÂ¦ÃÂÃÂÃÂÃÂÃÂÃÂ | Equipment/asset | HVAC, Elevator, Generator |
+| `floor` | ÃÂÃÂ§ÃÂÃÂÃÂÃÂÃÂÃÂ | Floor level | Ground Floor, Floor 1 |
 
 ### Space Classification Rules
 
 When parsing building data (from Excel or other sources), classify spaces as follows:
 
-- **Suites / Offices / Units** Ã¢ÂÂ `leasable_site`
-- **Lobby, Hallway, Corridor, Stairwell, Elevator Lobby** Ã¢ÂÂ `site` (common area)
-- **Mechanical Room, Electrical Room, Server Room, Storage** Ã¢ÂÂ `site` (technical/utility)
-- **Restroom, Kitchen, Break Room** Ã¢ÂÂ `site` (amenity)
-- **Parking spaces** Ã¢ÂÂ `site` with appropriate naming
-- **HVAC, Elevator, Generator, Fire Panel** Ã¢ÂÂ `equipment`
+- **Suites / Offices / Units** ÃÂ¢ÃÂÃÂ `leasable_site`
+- **Lobby, Hallway, Corridor, Stairwell, Elevator Lobby** ÃÂ¢ÃÂÃÂ `site` (common area)
+- **Mechanical Room, Electrical Room, Server Room, Storage** ÃÂ¢ÃÂÃÂ `site` (technical/utility)
+- **Restroom, Kitchen, Break Room** ÃÂ¢ÃÂÃÂ `site` (amenity)
+- **Parking spaces** ÃÂ¢ÃÂÃÂ `site` with appropriate naming
+- **HVAC, Elevator, Generator, Fire Panel** ÃÂ¢ÃÂÃÂ `equipment`
 
 ---
 
@@ -244,8 +244,8 @@ const runBatched = async (taskFns) => {
 
 Spaces that have parent-child relationships (e.g., a suite containing rooms) must be created in two phases:
 
-1. **Phase 1 Ã¢ÂÂ Independent spaces**: Create all spaces that don't depend on other spaces (directly under floors)
-2. **Phase 2 Ã¢ÂÂ Sub-spaces**: Create spaces that reference parent space IDs (need Phase 1 results)
+1. **Phase 1 ÃÂ¢ÃÂÃÂ Independent spaces**: Create all spaces that don't depend on other spaces (directly under floors)
+2. **Phase 2 ÃÂ¢ÃÂÃÂ Sub-spaces**: Create spaces that reference parent space IDs (need Phase 1 results)
 
 ```javascript
 // Phase 1: Create independent spaces (suites, common areas)
@@ -273,11 +273,11 @@ const phase2Results = await runBatched(phase2Tasks);
 
 Visitt uses a standard Excel template ("Implementation Sheet") with these tabs:
 
-- **Buildings** Ã¢ÂÂ building name, address, company
-- **Floors** Ã¢ÂÂ floor names and levels per building
-- **Spaces** Ã¢ÂÂ all spaces with floor assignment and type
-- **Equipment** Ã¢ÂÂ equipment with location assignment
-- **Tenants** Ã¢ÂÂ tenant info and unit assignment
+- **Buildings** ÃÂ¢ÃÂÃÂ building name, address, company
+- **Floors** ÃÂ¢ÃÂÃÂ floor names and levels per building
+- **Spaces** ÃÂ¢ÃÂÃÂ all spaces with floor assignment and type
+- **Equipment** ÃÂ¢ÃÂÃÂ equipment with location assignment
+- **Tenants** ÃÂ¢ÃÂÃÂ tenant info and unit assignment
 
 Parse with Python:
 
@@ -300,7 +300,7 @@ for row in floors_ws.iter_rows(min_row=2, values_only=True):
     if row[0]:
         floors.append({'name': row[0], 'level': row[1], 'building': row[2]})
 
-# Read Spaces tab Ã¢ÂÂ classify by type
+# Read Spaces tab ÃÂ¢ÃÂÃÂ classify by type
 spaces_ws = wb['Spaces']
 spaces = []
 for row in spaces_ws.iter_rows(min_row=2, values_only=True):
@@ -350,9 +350,9 @@ Before deployment, always generate a building preview component:
 
 Use the optimized bulk creation pattern (above) in a single `javascript_tool` call:
 
-1. Create building Ã¢ÂÂ get buildingId
-2. Create floors (upsertFloors) Ã¢ÂÂ get floorId map
-3. Phase 1: Create independent spaces Ã¢ÂÂ get parentId map
+1. Create building ÃÂ¢ÃÂÃÂ get buildingId
+2. Create floors (upsertFloors) ÃÂ¢ÃÂÃÂ get floorId map
+3. Phase 1: Create independent spaces ÃÂ¢ÃÂÃÂ get parentId map
 4. Phase 2: Create sub-spaces (if any)
 5. Create equipment (if any)
 6. Return summary with counts and timing
@@ -377,12 +377,12 @@ window.fetch = function(...args) {
         query: parsed.query?.substring(0, 200),
         variables: parsed.variables
       });
-      console.log('Ã°ÂÂÂ¡ GQL:', parsed.operationName, parsed.variables);
+      console.log('ÃÂ°ÃÂÃÂÃÂ¡ GQL:', parsed.operationName, parsed.variables);
     } catch(e) {}
   }
   return origFetch.apply(this, args);
 };
-console.log('Ã¢ÂÂ Interceptor active Ã¢ÂÂ perform your action now');
+console.log('ÃÂ¢ÃÂÃÂ Interceptor active ÃÂ¢ÃÂÃÂ perform your action now');
 ```
 
 Then perform the action in the UI and check `window._captured` for the mutation structure.
@@ -393,7 +393,7 @@ Then perform the action in the UI and check `window._captured` for the mutation 
 
 | Building | Floors | Spaces | Equipment | Total Entities | Time | Method |
 |----------|--------|--------|-----------|----------------|------|--------|
-| ÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂ¨ÃÂÃÂ (test) | 10 | 80 | 5 | 95 | ~12s | Batched, concurrency 3, 800ms delay |
+| ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂÃÂÃÂ¨ÃÂÃÂÃÂÃÂ (test) | 10 | 80 | 5 | 95 | ~12s | Batched, concurrency 3, 800ms delay |
 | 1300 West Higgins (real) | 5 | 31 | 1 | 37 | **5.3s** | Single script, concurrency 5, 400ms delay |
 
 ### Optimization Tips
@@ -467,37 +467,37 @@ When deleting many calendar events while preserving specific days:
 Full building deployment (building + floors + spaces + equipment) can be done entirely via GraphQL API without any browser UI interaction. Key discovery: the `upsertFloors` mutation requires `dummy_id_N` format for new floor IDs.
 
 ### Excel Implementation Sheet Parsing (discovered 2026-03-17)
-Standard Visitt Excel template can be parsed with openpyxl. Space classification (leasable vs common vs technical) can be automated based on naming conventions. Full flow: Excel Ã¢ÂÂ Python parse Ã¢ÂÂ React visualization Ã¢ÂÂ user approval Ã¢ÂÂ API deployment.
+Standard Visitt Excel template can be parsed with openpyxl. Space classification (leasable vs common vs technical) can be automated based on naming conventions. Full flow: Excel ÃÂ¢ÃÂÃÂ Python parse ÃÂ¢ÃÂÃÂ React visualization ÃÂ¢ÃÂÃÂ user approval ÃÂ¢ÃÂÃÂ API deployment.
 
-### Visual Builder Pattern Ã¢ÂÂ CORRECT WORKFLOW (discovered 2026-03-20)
+### Visual Builder Pattern ÃÂ¢ÃÂÃÂ CORRECT WORKFLOW (discovered 2026-03-20)
 
 **What it is**: A React JSX file Claude generates so the user can visually review data before deployment. It is a DISPLAY tool, NOT an input mechanism.
 
 **Correct flow (the only one that works)**:
 1. Claude populates PLAN/DATA arrays directly in the JSX file
-2. Cowork renders the JSX Ã¢ÂÂ user sees the visual preview
-3. User says approval word ("ÃÂ¤ÃÂ¨ÃÂÃÂ¡", "ÃÂÃÂÃÂÃÂÃÂ", etc.) in chat
+2. Cowork renders the JSX ÃÂ¢ÃÂÃÂ user sees the visual preview
+3. User says approval word ("ÃÂÃÂ¤ÃÂÃÂ¨ÃÂÃÂÃÂÃÂ¡", "ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ", etc.) in chat
 4. Claude reads the data from the JSX file and deploys via API
 
 **What NEVER works** (tried and failed):
-- Fetch from `localhost:7778` Ã¢ÂÂ blocked by Cowork sandbox
-- `window.require('fs')` (Electron) Ã¢ÂÂ not available in renderer
-- `localStorage` Ã¢ÂÂ different context from Chrome browser
-- HTTP server in VM to receive data Ã¢ÂÂ blocked by sandbox
+- Fetch from `localhost:7778` ÃÂ¢ÃÂÃÂ blocked by Cowork sandbox
+- `window.require('fs')` (Electron) ÃÂ¢ÃÂÃÂ not available in renderer
+- `localStorage` ÃÂ¢ÃÂÃÂ different context from Chrome browser
+- HTTP server in VM to receive data ÃÂ¢ÃÂÃÂ blocked by sandbox
 
-**Key principle**: The JSX is Claude's canvas for showing data. The chat is the approval channel. They are separate Ã¢ÂÂ don't try to connect them programmatically.
+**Key principle**: The JSX is Claude's canvas for showing data. The chat is the approval channel. They are separate ÃÂ¢ÃÂÃÂ don't try to connect them programmatically.
 
-### Stacking Plan Ã¢ÂÂ Show Tree View BEFORE Deployment (discovered 2026-03-20)
+### Stacking Plan ÃÂ¢ÃÂÃÂ Show Tree View BEFORE Deployment (discovered 2026-03-20)
 
 Before deploying buildings/floors/spaces, ALWAYS show a **hierarchical tree view** (not a 2D grid). The tree must be:
 - Collapsible/expandable per node (click to open/close)
-- Icons: Ã°ÂÂÂ Property Ã¢ÂÂ Ã°ÂÂÂ¢ Building Ã¢ÂÂ Ã°ÂÂªÂ Floor Ã¢ÂÂ Ã°ÂÂÂ© Leasable / Ã°ÂÂÂ· Common / Ã¢ÂÂÃ¯Â¸Â Equipment
+- Icons: ÃÂ°ÃÂÃÂÃÂ Property ÃÂ¢ÃÂÃÂ ÃÂ°ÃÂÃÂÃÂ¢ Building ÃÂ¢ÃÂÃÂ ÃÂ°ÃÂÃÂªÃÂ Floor ÃÂ¢ÃÂÃÂ ÃÂ°ÃÂÃÂÃÂ© Leasable / ÃÂ°ÃÂÃÂÃÂ· Common / ÃÂ¢ÃÂÃÂÃÂ¯ÃÂ¸ÃÂ Equipment
 - Space counts at each level
-- "ÃÂ¤ÃÂ¨ÃÂÃÂ¡" button at bottom
+- "ÃÂÃÂ¤ÃÂÃÂ¨ÃÂÃÂÃÂÃÂ¡" button at bottom
 
-The 2D grid view (stacking-plan.jsx) was shown AFTER deployment Ã¢ÂÂ the user corrected this. Tree view is the right pre-deployment UX.
+The 2D grid view (stacking-plan.jsx) was shown AFTER deployment ÃÂ¢ÃÂÃÂ the user corrected this. Tree view is the right pre-deployment UX.
 
-**Template**: Use `stacking-tree.jsx` pattern Ã¢ÂÂ `PropertyNode > BuildingNode > FloorNode > SpaceRow`, all collapsible via `useState(true)`.
+**Template**: Use `stacking-tree.jsx` pattern ÃÂ¢ÃÂÃÂ `PropertyNode > BuildingNode > FloorNode > SpaceRow`, all collapsible via `useState(true)`.
 
 ### Always Verify companyIds Against API Before JSX (discovered 2026-03-20)
 
@@ -506,9 +506,9 @@ When creating a JSX file with multiple properties, **never invent or copy-paste 
 2. Map names to IDs programmatically
 3. Paste verified IDs into JSX
 
-In this session, Generic Property 1 was given the wrong companyId (copied from Property 2 by mistake) Ã¢ÂÂ the API deployed to the wrong property. Verification takes 5 seconds and prevents silent misdeploys.
+In this session, Generic Property 1 was given the wrong companyId (copied from Property 2 by mistake) ÃÂ¢ÃÂÃÂ the API deployed to the wrong property. Verification takes 5 seconds and prevents silent misdeploys.
 
-### Inspections (Assignments) API Ã¢ÂÂ verified 2026-03-20
+### Inspections (Assignments) API ÃÂ¢ÃÂÃÂ verified 2026-03-20
 
 Inspections are called "assignments" internally. The UI at `/assignments#manageVisits` shows all inspection templates.
 
@@ -518,17 +518,17 @@ Inspections are called "assignments" internally. The UI at `/assignments#manageV
 - `interval` values: `"day"`, `"week"`, `"month"`, `"year"` (only `"week"` confirmed; others inferred)
 - `daysInWeek` uses 0=Sun, 1=Mon, ..., 6=Sat; empty array for monthly/annual
 - `completionEndOfUnit` matches the interval unit (e.g., `"week"` for weekly)
-- `items` is an array of space groups Ã¢ÂÂ each group has `type: "sites_tasks"`, `siteIds`, and `subItems` (tasks)
+- `items` is an array of space groups ÃÂ¢ÃÂÃÂ each group has `type: "sites_tasks"`, `siteIds`, and `subItems` (tasks)
 - Task types: `"text"`, `"numeric"`, `"checkbox"`, `"section_header"`, `"multiple_choice"`, `"signature"`, `"qr_scan"`
 - `siteIds` at top level = union of all siteIds from all items groups
-- Created 20 inspections in ~10s (sequential with 400ms delay) Ã¢ÂÂ zero errors
+- Created 20 inspections in ~10s (sequential with 400ms delay) ÃÂ¢ÃÂÃÂ zero errors
 
 **Inspection creation wizard UI:**
-- Step 1: Name + frequency (react-select dropdown Ã¢ÂÂ use computer click to open, XPath to select option)
-- Step 2: Spaces (multi-select with search) + tasks (textarea Ã¢ÂÂ use native setter hack)
+- Step 1: Name + frequency (react-select dropdown ÃÂ¢ÃÂÃÂ use computer click to open, XPath to select option)
+- Step 2: Spaces (multi-select with search) + tasks (textarea ÃÂ¢ÃÂÃÂ use native setter hack)
 - Step 3: Order (drag-to-sort spaces)
 - URL: `/assignment/create?companyId=COMPANY_ID&customerId=SLUG`
-- UI navigation: sidebar "Inspections" link Ã¢ÂÂ `/assignments`
+- UI navigation: sidebar "Inspections" link ÃÂ¢ÃÂÃÂ `/assignments`
 
 **React-select hack (open + select):**
 ```javascript
@@ -569,21 +569,21 @@ window.fetch = function(...args) {
 // After page navigates and redirects, read: JSON.parse(localStorage.getItem('_gql_captured'))
 ```
 
-### Tenants & Contacts Navigation Ã¢ÂÂ verified 2026-03-20
+### Tenants & Contacts Navigation ÃÂ¢ÃÂÃÂ verified 2026-03-20
 
 **URL patterns:**
 - Tenants list: `/tenants` (tab `#tenants`)
 - Global Contacts: `/tenants#contacts`
 - Tenant detail: `/tenant/<tenantId>?activeSideMenuItem=<tab>`
   - Tabs: `overview`, `contacts`, `locations` (Spaces tab), `documents`, `billing`
-- My Property / Building: `/building/current` Ã¢ÂÂ redirects to `/building/<buildingId>`
+- My Property / Building: `/building/current` ÃÂ¢ÃÂÃÂ redirects to `/building/<buildingId>`
   - Sub-tabs: `#overview`, `#floors`, `#spaces`, `#equipment`
 
 **Tenant Spaces (Locations) flow:**
 - "Spaces" tab in tenant detail uses URL param `activeSideMenuItem=locations` (NOT `spaces`)
 - Two sub-sections: **Leased spaces** (exclusive use) and **Authorized spaces** (work order rights)
-- Adding spaces: click "Leased spaces" or "Authorized spaces" button Ã¢ÂÂ opens Ariakit modal with SelectCombobox Ã¢ÂÂ pick space Ã¢ÂÂ Submit
-- Mutation is `setTenant` (replaces entire tenant) Ã¢ÂÂ always include existing contacts + locations when updating
+- Adding spaces: click "Leased spaces" or "Authorized spaces" button ÃÂ¢ÃÂÃÂ opens Ariakit modal with SelectCombobox ÃÂ¢ÃÂÃÂ pick space ÃÂ¢ÃÂÃÂ Submit
+- Mutation is `setTenant` (replaces entire tenant) ÃÂ¢ÃÂÃÂ always include existing contacts + locations when updating
 
 **Ariakit SelectCombobox component (different from react-select):**
 ```javascript
@@ -596,20 +596,20 @@ opts[0].click(); // pick first option
 ```
 
 **My Property building page (`/building/<buildingId>`):**
-- Sidebar "My property" link Ã¢ÂÂ `/building/current` Ã¢ÂÂ auto-redirects to current building
+- Sidebar "My property" link ÃÂ¢ÃÂÃÂ `/building/current` ÃÂ¢ÃÂÃÂ auto-redirects to current building
 - Building queries: `buildingStructure({buildingId})` + `fetchBuildingFloors` + `sitesSearch`
-- Space creation button: "Create space" Ã¢ÂÂ modal with Name, Type, Location Ã¢ÂÂ fires `insertSite`
-- Equipment creation button: "Create equipment" Ã¢ÂÂ modal with Name, Type, Location, Notes, "Show advance details" Ã¢ÂÂ fires `insertSite` with `modelType: "equipment"`
+- Space creation button: "Create space" ÃÂ¢ÃÂÃÂ modal with Name, Type, Location ÃÂ¢ÃÂÃÂ fires `insertSite`
+- Equipment creation button: "Create equipment" ÃÂ¢ÃÂÃÂ modal with Name, Type, Location, Notes, "Show advance details" ÃÂ¢ÃÂÃÂ fires `insertSite` with `modelType: "equipment"`
 - Both are the SAME mutation (`insertSite`) with different `modelType`
 - `GetCompanySiteTypes({companyId})` fetches custom space/equipment type categories
 
 ### Bulk Category Operations (discovered 2026-03-20)
 Full flow for replacing ALL categories across N properties:
 1. Query all categories: `allCategories(companyId: ID) { _id name }`
-2. Batch unassign: `removeCategoryFromCompany(categoryId, companyId)` per property ÃÂ category (concurrency 6, delay 400ms)
+2. Batch unassign: `removeCategoryFromCompany(categoryId, companyId)` per property ÃÂÃÂ category (concurrency 6, delay 400ms)
 3. Batch delete: `deleteCategory(categoryId)` for each old category
-4. Batch create: `createCategory(input: { name, companyId, customerId })` Ã¢ÂÂ NO color field
-5. 30 properties ÃÂ 20 categories = 600 creates Ã¢ÂÂ runs in ~25s
+4. Batch create: `createCategory(input: { name, companyId, customerId })` ÃÂ¢ÃÂÃÂ NO color field
+5. 30 properties ÃÂÃÂ 20 categories = 600 creates ÃÂ¢ÃÂÃÂ runs in ~25s
 
 Timing verified: 240 unassigns + 8 deletes + 600 creates = ~75 seconds total on staging.
 
@@ -623,10 +623,10 @@ Timing verified: 240 unassigns + 8 deletes + 600 creates = ~75 seconds total on 
 4. **Async javascript_tool returns undefined**: When using `(async () => { ... })()`, store results in `window._result` and read in a separate call.
 5. **Content filter blocking IDs**: Some base64-looking IDs get blocked. Return confirmation strings instead of raw IDs.
 6. **companies() nested field**: Return type is `PaginatedCompanies`. The data field is `companies` (same name). `limit` and `skip` are REQUIRED. `total` field does NOT exist.
-7. **insertSite does NOT assign to floor**: Must call `changeSitesLocation` after `insertSite` to place spaces on floors. `buildingId` param is required in `changeSitesLocation` Ã¢ÂÂ omitting causes silent failure.
+7. **insertSite does NOT assign to floor**: Must call `changeSitesLocation` after `insertSite` to place spaces on floors. `buildingId` param is required in `changeSitesLocation` ÃÂ¢ÃÂÃÂ omitting causes silent failure.
 8. **createCategory has no color field**: The mutation only accepts `name`, `companyId`, `customerId`. Adding color causes a validation error.
 6. **Session cookies**: All API calls must include `credentials: 'include'` for cookie auth.
-8. **read_network_requests misses pre-call requests**: The tool only captures requests made AFTER first call. If creation fires before tracking starts, requests are lost. Use `localStorage` fetch interceptor instead Ã¢ÂÂ it survives SPA navigation.
+8. **read_network_requests misses pre-call requests**: The tool only captures requests made AFTER first call. If creation fires before tracking starts, requests are lost. Use `localStorage` fetch interceptor instead ÃÂ¢ÃÂÃÂ it survives SPA navigation.
 9. **Inspections URL is /assignments not /inspections**: Navigation to `/inspections` or `/assignment` returns 404. Correct path: `/assignments#manageVisits` (all templates) or `/assignments#openVisits` (active).
 10. **`type` tool doesn't work on task textarea**: Use native setter + dispatch events pattern instead.
 11. **Tenant "Spaces" tab uses `activeSideMenuItem=locations`**: Despite the UI button saying "Spaces", the internal URL param is `locations`. Navigating to `?activeSideMenuItem=spaces` shows a blank tab.
@@ -637,17 +637,17 @@ Timing verified: 240 unassigns + 8 deletes + 600 creates = ~75 seconds total on 
 16. **bookAmenity / deleteAmenityBooking return "Invalid query"**: These mutations exist in the schema but return `GRAPHQL_VALIDATION_FAILED: Invalid query` at the field level. They may require special auth or a specific query document format. Capture via GQL interceptor from the real UI flow instead of probing directly.
 17. **Visitor contact selector shows "No results" without contacts**: The "Existing contact" mode host dropdown only lists contacts (people), not tenants. If a property has tenants but no contacts, the dropdown is empty. Switch to "Not a contact" mode which uses the tenant list.
 18. **Company context drift (2026-03-22)**: Navigating between pages (especially Amenities, Tenants, Company-Settings) can silently switch the active property context to a different property. Symptom: page heading or breadcrumb shows a different property name. Fix: navigate to `staging.visitt.io/company/CORRECT_COMPANY_ID#settings` to restore context, then re-navigate to your target page.
-19. **ION-BUTTON is a Web Component Ã¢ÂÂ querySelectorAll('button') won't find it (2026-03-22)**: Ionic's `<ion-button>` renders a shadow DOM internally. `document.querySelectorAll('button')` returns nothing for ion-buttons. Use `document.querySelector('ion-button')` or `document.querySelectorAll('ion-button')` directly and call `.click()` on the element.
+19. **ION-BUTTON is a Web Component ÃÂ¢ÃÂÃÂ querySelectorAll('button') won't find it (2026-03-22)**: Ionic's `<ion-button>` renders a shadow DOM internally. `document.querySelectorAll('button')` returns nothing for ion-buttons. Use `document.querySelector('ion-button')` or `document.querySelectorAll('ion-button')` directly and call `.click()` on the element.
 20. **ion-textarea value doesn't register with React via standard input (2026-03-22)**: In Ionic+React, setting `.value` on a shadow DOM textarea is ignored unless you also dispatch a synthetic event. Pattern: `const el = textarea.shadowRoot?.querySelector('textarea') || textarea; el.value = 'text'; el.dispatchEvent(new Event('input', { bubbles: true }));`
 21. **allSites query does NOT accept buildingId directly (2026-03-22)**: Passing `buildingId` inside the `input` object of `allSites` causes `GRAPHQL_VALIDATION_FAILED`. `allSites` only takes `{ companyId, modelType }`. To get sites for a specific building, use `building(buildingId: "ID") { sites { _id name modelType } }` instead.
-22. **Amenity card not showing in Visitt+ /book-amenity (2026-03-22)**: Even if `amenities { totalCount: 1 }` is in Apollo cache, the amenity card may not render if: (a) the "Amenities" feature flag under Tenants is OFF (check `/company/ID#settings` Ã¢ÂÂ Super-Admin Ã¢ÂÂ Tenants Ã¢ÂÂ Amenities toggle), or (b) the amenity has no time slots configured for the current day of week. Amenities are filtered by available schedule before display.
+22. **Amenity card not showing in Visitt+ /book-amenity (2026-03-22)**: Even if `amenities { totalCount: 1 }` is in Apollo cache, the amenity card may not render if: (a) the "Amenities" feature flag under Tenants is OFF (check `/company/ID#settings` ÃÂ¢ÃÂÃÂ Super-Admin ÃÂ¢ÃÂÃÂ Tenants ÃÂ¢ÃÂÃÂ Amenities toggle), or (b) the amenity has no time slots configured for the current day of week. Amenities are filtered by available schedule before display.
 
 ---
 
 ## Page Map: Visitors (discovered 2026-03-21)
 
 **URLs:**
-- List: `/visitors` Ã¢ÂÂ defaults to `#visitor-list`
+- List: `/visitors` ÃÂ¢ÃÂÃÂ defaults to `#visitor-list`
 - Watchlist: `/visitor-watchlist#watchlist`
 - Create: `/visitor/create?companyId=COMPANY_ID`
 
@@ -657,22 +657,22 @@ Timing verified: 240 unassigns + 8 deletes + 600 creates = ~75 seconds total on 
 
 **Filters:** Visit schedule (All expected), Building, Tenant
 
-**Create form Ã¢ÂÂ two modes (Host details section):**
+**Create form ÃÂ¢ÃÂÃÂ two modes (Host details section):**
 
 Mode 1: **Existing contact** (radio `contactIsHost = true`)
-- "Select contact" dropdown Ã¢ÂÂ searches contacts for the property
+- "Select contact" dropdown ÃÂ¢ÃÂÃÂ searches contacts for the property
 - Visitor: First Name*, Last Name*, Email (optional)
 - Access: Single-day / Multi-day, From* date, All day toggle
 - Additional info (optional)
 
 Mode 2: **Not a contact** (radio `contactIsHost = false`)
-- "Select tenant" dropdown Ã¢ÂÂ lists all tenants for the property
+- "Select tenant" dropdown ÃÂ¢ÃÂÃÂ lists all tenants for the property
 - Name* (host full name), Email (optional)
 - Visitor: First Name*, Last Name*, Email (optional)
 - Access: Single-day / Multi-day, From* date, All day toggle
 - Additional info (optional)
 
-**Key mutation Ã¢ÂÂ createVisitor:**
+**Key mutation ÃÂ¢ÃÂÃÂ createVisitor:**
 ```graphql
 mutation createVisitor($input: CreateVisitorInput!) {
   createVisitor(input: $input) {
@@ -716,8 +716,8 @@ For multi-day: add `"endDate": "2026-03-25"`.
 **Delete/cancel visitors**: Mutation names not yet confirmed. Capture via GQL interceptor from visitor list actions.
 
 **Finding a property with tenants (for test):**
-- Westside Commons: `companyId = 69be7bbe633d48b012df1d7b` Ã¢ÂÂ 3 tenants (Creative Collective Inc., West End Technologies, Westside Fitness Club)
-- ÃÂÃÂÃÂÃÂÃÂ ÃÂÃÂ¨ÃÂÃÂÃÂÃÂ¨ÃÂÃÂ: `companyId = 5JQSqoQ3vKxNtg3Ko` Ã¢ÂÂ 9 tenants
+- Westside Commons: `companyId = 69be7bbe633d48b012df1d7b` ÃÂ¢ÃÂÃÂ 3 tenants (Creative Collective Inc., West End Technologies, Westside Fitness Club)
+- ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂ¨ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¨ÃÂÃÂÃÂÃÂ: `companyId = 5JQSqoQ3vKxNtg3Ko` ÃÂ¢ÃÂÃÂ 9 tenants
 
 ---
 
@@ -729,30 +729,30 @@ For multi-day: add `"endDate": "2026-03-25"`.
 - Create amenity: `/amenity/create`
 - Edit amenity: `/amenity/<amenityId>/edit` (inferred)
 
-**Tab 1 Ã¢ÂÂ Bookings:**
+**Tab 1 ÃÂ¢ÃÂÃÂ Bookings:**
 - Table columns: Amenity, Status, Booking Time, Created Date, Contact
 - View toggle: Table | Calendar
 - Filters: Amenity (dropdown), Booking status (dropdown), Contact (dropdown)
-- Button: "+ Book amenity" Ã¢ÂÂ navigates to booking create form
+- Button: "+ Book amenity" ÃÂ¢ÃÂÃÂ navigates to booking create form
 
-**Tab 2 Ã¢ÂÂ Manage amenities:**
+**Tab 2 ÃÂ¢ÃÂÃÂ Manage amenities:**
 - Table columns: Name, Building, Description, Assigned Users
-- Button: "+ Add amenity" Ã¢ÂÂ `/amenity/create`
+- Button: "+ Add amenity" ÃÂ¢ÃÂÃÂ `/amenity/create`
 
 **Create amenity form fields (Settings tab):**
 - Amenity Gallery (up to 15 images)
 - Name* (required)
-- Building* (required) Ã¢ÂÂ dropdown
+- Building* (required) ÃÂ¢ÃÂÃÂ dropdown
 - Maximum occupancy (number)
 - Description* (required)
-- Assigned user Ã¢ÂÂ dropdown
+- Assigned user ÃÂ¢ÃÂÃÂ dropdown
 - Time slot duration (default: 30 min)
 - Cost (USD per booking)
-- Schedule: per day of week (SunÃ¢ÂÂSat), each with "Add time" ranges
+- Schedule: per day of week (SunÃÂ¢ÃÂÃÂSat), each with "Add time" ranges
 - Availability rules: Booking window (min/max advance in days), Time buffer (before/after, default 15 min), Max duration per booking
 - Link amenities with shared space
 
-**Create amenity form Ã¢ÂÂ second tab: Booking questions** (questions shown to users when booking)
+**Create amenity form ÃÂ¢ÃÂÃÂ second tab: Booking questions** (questions shown to users when booking)
 
 **Key GQL queries on amenity pages:**
 ```graphql
@@ -778,7 +778,7 @@ query contacts($input: ContactSearchInput!) { ... }  # contact search for host
 
 **Key mutations:**
 ```graphql
-# Create or update amenity (same mutation Ã¢ÂÂ presence of _id = update)
+# Create or update amenity (same mutation ÃÂ¢ÃÂÃÂ presence of _id = update)
 mutation setAmenity($input: AmenityInput!) {
   setAmenity(input: $input) { ...AmenityItem }
 }
@@ -794,10 +794,10 @@ mutation updateAmenityBooking($amenityBookingId: String!, $input: UpdateAmenityB
 }
 
 # These exist in schema but return "Invalid query" when called manually:
-# bookAmenity(...)          Ã¢ÂÂ create booking
-# deleteAmenityBooking(...) Ã¢ÂÂ delete booking
-# cancelAmenityBooking(...) Ã¢ÂÂ cancel booking
-# Ã¢ÂÂ Capture these via GQL interceptor from the actual "+ Book amenity" UI flow
+# bookAmenity(...)          ÃÂ¢ÃÂÃÂ create booking
+# deleteAmenityBooking(...) ÃÂ¢ÃÂÃÂ delete booking
+# cancelAmenityBooking(...) ÃÂ¢ÃÂÃÂ cancel booking
+# ÃÂ¢ÃÂÃÂ Capture these via GQL interceptor from the actual "+ Book amenity" UI flow
 ```
 
 ---
@@ -812,15 +812,15 @@ mutation updateAmenityBooking($amenityBookingId: String!, $input: UpdateAmenityB
 - Filters: Linked to (dropdown), Status (dropdown), Expiration Date (date picker)
 - Table columns: (checkbox), Name, Tags, Start Date, End Date, Linked To
 - Bulk toolbar: Columns, Export, Delete
-- Right sidebar: Tags panel Ã¢ÂÂ lists all tags, "Add" button to create a tag
+- Right sidebar: Tags panel ÃÂ¢ÃÂÃÂ lists all tags, "Add" button to create a tag
 
-**Key operations (mutations not yet captured Ã¢ÂÂ capture via GQL interceptor):**
-- Create document: "+ Add document" button Ã¢ÂÂ form (fields TBD)
+**Key operations (mutations not yet captured ÃÂ¢ÃÂÃÂ capture via GQL interceptor):**
+- Create document: "+ Add document" button ÃÂ¢ÃÂÃÂ form (fields TBD)
 - Import documents: bulk CSV/file import
-- Delete documents: bulk select Ã¢ÂÂ Delete button
-- Tags: "Add tag" Ã¢ÂÂ creates a tag that can be attached to documents
+- Delete documents: bulk select ÃÂ¢ÃÂÃÂ Delete button
+- Tags: "Add tag" ÃÂ¢ÃÂÃÂ creates a tag that can be attached to documents
 
-**TODO for next session**: Navigate to Documents with GQL interceptor active, click "+ Add document", fill form, submit Ã¢ÂÂ capture `createDocument` (or equivalent) mutation + its full input shape.
+**TODO for next session**: Navigate to Documents with GQL interceptor active, click "+ Add document", fill form, submit ÃÂ¢ÃÂÃÂ capture `createDocument` (or equivalent) mutation + its full input shape.
 
 ---
 
@@ -832,15 +832,15 @@ mutation updateAmenityBooking($amenityBookingId: String!, $input: UpdateAmenityB
 - **Amenity field**: standard dropdown showing all enabled amenities for the property
   - "Property feature Amenities is disabled" banner = wrong property. Switch to one with amenities (e.g., "1050 West Pender BGO Demo")
 - **Date input**: hidden text input (`name="date"`, `value="Today"`). Date picker uses native `Date` objects (NOT moment).
-  - To change date via fiber: level 6 onChange takes `new Date('YYYY-MM-DD')` but display shows "Invalid date" Ã¢ÂÂ cosmetic bug, form still functions
-  - Today's slots show ALL slots including past ones Ã¢ÂÂ form validates past-slot on submit
-- **Slot selection**: `BookingRangeButton` components Ã¢ÂÂ range selector (click start, click end)
-  - **Fiber onClick required** Ã¢ÂÂ coordinate clicks and `.click()` do NOT update React state
+  - To change date via fiber: level 6 onChange takes `new Date('YYYY-MM-DD')` but display shows "Invalid date" ÃÂ¢ÃÂÃÂ cosmetic bug, form still functions
+  - Today's slots show ALL slots including past ones ÃÂ¢ÃÂÃÂ form validates past-slot on submit
+- **Slot selection**: `BookingRangeButton` components ÃÂ¢ÃÂÃÂ range selector (click start, click end)
+  - **Fiber onClick required** ÃÂ¢ÃÂÃÂ coordinate clicks and `.click()` do NOT update React state
   - Pattern: `fiber.memoizedProps.onClick({preventDefault:()=>{}, nativeEvent:{preventDefault:()=>{}}, ...fakeEvent})`
-  - Clicking multiple slots selects a RANGE (e.g., click 18:00 then click 20:00 Ã¢ÂÂ 18:00-21:00 selected)
+  - Clicking multiple slots selects a RANGE (e.g., click 18:00 then click 20:00 ÃÂ¢ÃÂÃÂ 18:00-21:00 selected)
   - `isSelected` class on button = slot is selected in React state
   - Comment field appears ONLY when a slot is selected (use as confirmation)
-- **Cancel an existing booking**: Click row Ã¢ÂÂ opens issue detail panel Ã¢ÂÂ find "Cancel" button in booking card Ã¢ÂÂ confirmation dialog (requires text reason) Ã¢ÂÂ Submit Ã¢ÂÂ fires `updateAmenityBookingStatus`
+- **Cancel an existing booking**: Click row ÃÂ¢ÃÂÃÂ opens issue detail panel ÃÂ¢ÃÂÃÂ find "Cancel" button in booking card ÃÂ¢ÃÂÃÂ confirmation dialog (requires text reason) ÃÂ¢ÃÂÃÂ Submit ÃÂ¢ÃÂÃÂ fires `updateAmenityBookingStatus`
 - **Approve/Reject pending booking**: Approve/Reject buttons appear in-row for Pending bookings
 
 ### Finding Booking IDs
@@ -852,22 +852,22 @@ mutation updateAmenityBooking($amenityBookingId: String!, $input: UpdateAmenityB
 ## Documents UI Patterns - Confirmed (2026-03-21)
 
 ### Tags Sidebar
-- Tags panel is a RIGHT sidebar in `/documents` Ã¢ÂÂ buttons can be off-screen (x > 1657 in 1920px viewport)
-- "Add" button next to Tags opens an inline text input Ã¢ÂÂ type tag name Ã¢ÂÂ press Enter to create
-- Delete tag: kebab/icon next to tag Ã¢ÂÂ confirms `deleteDocumentTag` mutation
+- Tags panel is a RIGHT sidebar in `/documents` ÃÂ¢ÃÂÃÂ buttons can be off-screen (x > 1657 in 1920px viewport)
+- "Add" button next to Tags opens an inline text input ÃÂ¢ÃÂÃÂ type tag name ÃÂ¢ÃÂÃÂ press Enter to create
+- Delete tag: kebab/icon next to tag ÃÂ¢ÃÂÃÂ confirms `deleteDocumentTag` mutation
 - Tag `_id` = `documentTagId` in the mutation (not `tagId`, not `id`)
 
 ### Document Deletion
-- Bulk delete: checkbox rows Ã¢ÂÂ "Delete" button in toolbar Ã¢ÂÂ fires `deleteDocuments` with array of IDs
-- No individual row delete button Ã¢ÂÂ must use bulk toolbar
+- Bulk delete: checkbox rows ÃÂ¢ÃÂÃÂ "Delete" button in toolbar ÃÂ¢ÃÂÃÂ fires `deleteDocuments` with array of IDs
+- No individual row delete button ÃÂ¢ÃÂÃÂ must use bulk toolbar
 
 ---
 
 ## Visitor UI Patterns - Confirmed (2026-03-21)
 
 ### Cancel Permission
-- Open visitor row Ã¢ÂÂ "Visitor page" side panel
-- "Cancel permission" button Ã¢ÂÂ confirmation dialog ("Are you sure?") Ã¢ÂÂ Confirm
+- Open visitor row ÃÂ¢ÃÂÃÂ "Visitor page" side panel
+- "Cancel permission" button ÃÂ¢ÃÂÃÂ confirmation dialog ("Are you sure?") ÃÂ¢ÃÂÃÂ Confirm
 - Fires `deactivateVisitor` mutation
 
 ### Delete Visitor
@@ -884,13 +884,13 @@ mutation updateAmenityBooking($amenityBookingId: String!, $input: UpdateAmenityB
 |------|------------|-------|
 | My Property (building spaces view) | `/building/:buildingId#spaces` | NOT `/my-property/building/:buildingId` (404) |
 | Tenants list for a property | `/tenants#tenants` (after property context set) | Or navigate via sidebar |
-| Tenant profile Ã¢ÂÂ Spaces tab | `/tenant/:tenantId?activeSideMenuItem=locations` | Shows leased + authorized spaces |
+| Tenant profile ÃÂ¢ÃÂÃÂ Spaces tab | `/tenant/:tenantId?activeSideMenuItem=locations` | Shows leased + authorized spaces |
 
-### Tenant Profile Ã¢ÂÂ Spaces tab
+### Tenant Profile ÃÂ¢ÃÂÃÂ Spaces tab
 - Left nav shows: Overview, Contacts, **Spaces**, Documents, Billing, Super admin data
 - "Spaces" tab (`activeSideMenuItem=locations`) has two sections:
-  - **Leased spaces** Ã¢ÂÂ spaces with `isLeased: true` (exclusive occupancy, labeled "Leased space")
-  - **Authorized spaces** Ã¢ÂÂ spaces with `isLeased: false` (WO creation rights, labeled "Authorized space")
+  - **Leased spaces** ÃÂ¢ÃÂÃÂ spaces with `isLeased: true` (exclusive occupancy, labeled "Leased space")
+  - **Authorized spaces** ÃÂ¢ÃÂÃÂ spaces with `isLeased: false` (WO creation rights, labeled "Authorized space")
 - Breadcrumb path per space: `Building Name > Floor Name > Suite Name`
 - "+ Leased spaces" button to add from UI; same result as `setTenant` mutation with `isLeased: true`
 
@@ -900,9 +900,9 @@ mutation updateAmenityBooking($amenityBookingId: String!, $input: UpdateAmenityB
 - Leased spaces column truncates with "..." after 2-3 entries (full list only in tenant detail)
 
 ### Leasable vs Regular Spaces in My Property
-- My Property Ã¢ÂÂ Spaces tab shows ALL spaces (leasable + regular)
+- My Property ÃÂ¢ÃÂÃÂ Spaces tab shows ALL spaces (leasable + regular)
 - Filter by Type to see only leasable spaces
-- Space creation dialog has "Leasable space" toggle Ã¢ÂÂ sets `modelType: "leasable_site"`
+- Space creation dialog has "Leasable space" toggle ÃÂ¢ÃÂÃÂ sets `modelType: "leasable_site"`
 - Spaces named "Suite" or "Residential Unit" are auto-classified as leasable by the system
 
 ---
@@ -915,25 +915,25 @@ There are **two distinct settings levels** in Visitt. Each has a different URL p
 
 ### Level 1: Customer-Level Settings
 **URL**: `/customer/[customer_slug]#settings` (e.g., `/customer/apex_properties#settings`)
-**How to reach**: Customers (Admin) Ã¢ÂÂ search customer Ã¢ÂÂ click arrow Ã¢ÂÂ Settings tab
+**How to reach**: Customers (Admin) ÃÂ¢ÃÂÃÂ search customer ÃÂ¢ÃÂÃÂ click arrow ÃÂ¢ÃÂÃÂ Settings tab
 
 This is the **account-wide** configuration. Sections:
 
 | Section | What's there |
 |---|---|
-| **General** | Default Timezone, Country, Language, Terminology, Date format (MDY vs DMY), Time format (AM:PM vs 24h), First work day (Sun/Mon), Currency ($, Ã¢ÂÂª, Ã¢ÂÂ¬, C$), Measurement system (Imperial/Metric) |
+| **General** | Default Timezone, Country, Language, Terminology, Date format (MDY vs DMY), Time format (AM:PM vs 24h), First work day (Sun/Mon), Currency ($, ÃÂ¢ÃÂÃÂª, ÃÂ¢ÃÂÃÂ¬, C$), Measurement system (Imperial/Metric) |
 | **Features & Notifications** | Toggles: SMS notifications, Email notifications, Mobile Calendar, Issue Set External Reporter, Templates library, SLA |
-| **Live Translate** | Toggle: "Enable Live Translate on work orders" Ã¢ÂÂ AI translates work order chat messages in real time based on user language |
-| **SSO** | "Enable SSO" button Ã¢ÂÂ allows login via Okta, Azure, Google |
+| **Live Translate** | Toggle: "Enable Live Translate on work orders" ÃÂ¢ÃÂÃÂ AI translates work order chat messages in real time based on user language |
+| **SSO** | "Enable SSO" button ÃÂ¢ÃÂÃÂ allows login via Okta, Azure, Google |
 | **Integrations** | Set SFTP Integration, Set MRI Integration, Set up Yardi Integration |
 | **Import** | Import One (property data from external systems), Import inspections (Excel by Property Name column), Import users (Excel bulk) |
-| **Danger zone** | Status dropdown (New/Active/etc.) Ã¢ÂÂ affects demo data reset behavior; Move a property to a different customer |
+| **Danger zone** | Status dropdown (New/Active/etc.) ÃÂ¢ÃÂÃÂ affects demo data reset behavior; Move a property to a different customer |
 
 ---
 
 ### Level 2: Property-Level Super-Admin (Feature Flags)
 **URL**: `/company/[property_id]#settings`
-**How to reach**: Customers (Admin) Ã¢ÂÂ customer Ã¢ÂÂ Properties tab Ã¢ÂÂ click property name Ã¢ÂÂ **Super-Admin tab**
+**How to reach**: Customers (Admin) ÃÂ¢ÃÂÃÂ customer ÃÂ¢ÃÂÃÂ Properties tab ÃÂ¢ÃÂÃÂ click property name ÃÂ¢ÃÂÃÂ **Super-Admin tab**
 
 This is where **Feature Flags** live. The page has **two sections**:
 
@@ -943,23 +943,23 @@ These control which major product areas are active for this property. Parent fla
 
 | Feature Flag | Sub-flags | Status (Apex Tower) | What it does |
 |---|---|---|---|
-| **Tenants** | | Ã¢ÂÂ ON | Enables the Tenants module Ã¢ÂÂ tenant directory, contacts, leases |
-| Ã¢ÂÂ Amenities | | Ã¢ÂÂ OFF | Enables Amenities booking for tenants in the tenant app |
-| Ã¢ÂÂ Broadcasts | | Ã¢ÂÂ ON | Enables sending broadcast messages to tenants |
-| Ã¢ÂÂ Packages | | Ã¢ÂÂ OFF | Enables package tracking module |
-| Ã¢ÂÂ Visitor management | | Ã¢ÂÂ OFF | Enables visitor pre-registration via tenant app |
-| **Visitt+** | | Ã¢ÂÂ OFF | Enables the white-label tenant app (Visitt+). Must be ON to unlock sub-flags |
-| Ã¢ÂÂ Visitt+ custom branding | | Ã¢ÂÂ OFF | Custom colors/logo for the Visitt+ app |
-| Ã¢ÂÂ Visitt+ custom pages | | Ã¢ÂÂ OFF | Custom content pages inside Visitt+ |
-| **Vendors** | | Ã¢ÂÂ OFF | Enables vendor management module |
-| **Documents** | | Ã¢ÂÂ ON | Enables document management (COI tracking, uploads, etc.) |
-| Ã¢ÂÂ Tenant COI | | Ã¢ÂÂ OFF | Certificate of Insurance tracking for tenants |
-| Ã¢ÂÂ Vendor COI | | Ã¢ÂÂ OFF | Certificate of Insurance tracking for vendors |
-| Ã¢ÂÂ AI COI Validation | | Ã¢ÂÂ OFF | AI automatically validates COI documents |
-| Ã¢ÂÂ AI Compliance Check | | Ã¢ÂÂ OFF | AI checks compliance rules on COI docs |
-| **Visitt AI** | | Ã¢ÂÂ OFF | Master switch for all AI features |
-| Ã¢ÂÂ Live Translate | | Ã¢ÂÂ OFF | AI translates work order chat messages in real time |
-| **Billing** | | Ã¢ÂÂ ON | Enables the Billing module (charges, invoices) |
+| **Tenants** | | ÃÂ¢ÃÂÃÂ ON | Enables the Tenants module ÃÂ¢ÃÂÃÂ tenant directory, contacts, leases |
+| ÃÂ¢ÃÂÃÂ Amenities | | ÃÂ¢ÃÂÃÂ OFF | Enables Amenities booking for tenants in the tenant app |
+| ÃÂ¢ÃÂÃÂ Broadcasts | | ÃÂ¢ÃÂÃÂ ON | Enables sending broadcast messages to tenants |
+| ÃÂ¢ÃÂÃÂ Packages | | ÃÂ¢ÃÂÃÂ OFF | Enables package tracking module |
+| ÃÂ¢ÃÂÃÂ Visitor management | | ÃÂ¢ÃÂÃÂ OFF | Enables visitor pre-registration via tenant app |
+| **Visitt+** | | ÃÂ¢ÃÂÃÂ OFF | Enables the white-label tenant app (Visitt+). Must be ON to unlock sub-flags |
+| ÃÂ¢ÃÂÃÂ Visitt+ custom branding | | ÃÂ¢ÃÂÃÂ OFF | Custom colors/logo for the Visitt+ app |
+| ÃÂ¢ÃÂÃÂ Visitt+ custom pages | | ÃÂ¢ÃÂÃÂ OFF | Custom content pages inside Visitt+ |
+| **Vendors** | | ÃÂ¢ÃÂÃÂ OFF | Enables vendor management module |
+| **Documents** | | ÃÂ¢ÃÂÃÂ ON | Enables document management (COI tracking, uploads, etc.) |
+| ÃÂ¢ÃÂÃÂ Tenant COI | | ÃÂ¢ÃÂÃÂ OFF | Certificate of Insurance tracking for tenants |
+| ÃÂ¢ÃÂÃÂ Vendor COI | | ÃÂ¢ÃÂÃÂ OFF | Certificate of Insurance tracking for vendors |
+| ÃÂ¢ÃÂÃÂ AI COI Validation | | ÃÂ¢ÃÂÃÂ OFF | AI automatically validates COI documents |
+| ÃÂ¢ÃÂÃÂ AI Compliance Check | | ÃÂ¢ÃÂÃÂ OFF | AI checks compliance rules on COI docs |
+| **Visitt AI** | | ÃÂ¢ÃÂÃÂ OFF | Master switch for all AI features |
+| ÃÂ¢ÃÂÃÂ Live Translate | | ÃÂ¢ÃÂÃÂ OFF | AI translates work order chat messages in real time |
+| **Billing** | | ÃÂ¢ÃÂÃÂ ON | Enables the Billing module (charges, invoices) |
 
 > **Key rule**: Enabling a child flag when the parent is OFF has no effect. Always enable parent first.
 
@@ -969,27 +969,27 @@ These are features in development or rolled out selectively. Names with `[Fattal
 
 | Experiment Flag | Status (Apex Tower) | What it does |
 |---|---|---|
-| Amenity Booking Inquiry Flow | Ã¢ÂÂ OFF | Alternative UX for booking amenities (inquiry-first instead of instant book) |
-| Deprecated contact fields | Ã¢ÂÂ OFF | Shows legacy contact fields that are being phased out |
-| Show inspections with deficiencies on the status page | Ã¢ÂÂ OFF | Adds a "deficiencies" section to the property status dashboard |
-| [Fattal] Complete work order review charges notice | Ã¢ÂÂ OFF | Customer-specific: sends notice when WO charges are reviewed |
-| [Fattal] Rolling work order automation | Ã¢ÂÂ OFF | Customer-specific: automates recurring work orders |
-| Set coi requirements manually | Ã¢ÂÂ OFF | Allows manually configuring COI requirements instead of using defaults |
-| Views | Ã¢ÂÂ OFF | Enables the "Views" feature (custom saved filters/dashboards) |
-| [Sales] Views AI Prompt | Ã¢ÂÂ ON | Sales/demo flag: enables AI prompt UI inside Views |
-| Out of office | Ã¢ÂÂ OFF | Enables out-of-office status for users (auto-reassignment of work orders) |
+| Amenity Booking Inquiry Flow | ÃÂ¢ÃÂÃÂ OFF | Alternative UX for booking amenities (inquiry-first instead of instant book) |
+| Deprecated contact fields | ÃÂ¢ÃÂÃÂ OFF | Shows legacy contact fields that are being phased out |
+| Show inspections with deficiencies on the status page | ÃÂ¢ÃÂÃÂ OFF | Adds a "deficiencies" section to the property status dashboard |
+| [Fattal] Complete work order review charges notice | ÃÂ¢ÃÂÃÂ OFF | Customer-specific: sends notice when WO charges are reviewed |
+| [Fattal] Rolling work order automation | ÃÂ¢ÃÂÃÂ OFF | Customer-specific: automates recurring work orders |
+| Set coi requirements manually | ÃÂ¢ÃÂÃÂ OFF | Allows manually configuring COI requirements instead of using defaults |
+| Views | ÃÂ¢ÃÂÃÂ OFF | Enables the "Views" feature (custom saved filters/dashboards) |
+| [Sales] Views AI Prompt | ÃÂ¢ÃÂÃÂ ON | Sales/demo flag: enables AI prompt UI inside Views |
+| Out of office | ÃÂ¢ÃÂÃÂ OFF | Enables out-of-office status for users (auto-reassignment of work orders) |
 
 #### Other sections on the Super-Admin page
 
 | Section | What's there |
 |---|---|
 | **Visitt+** | Instructions: "To enable Visitt+ for the company, enable the company feature named 'Visitt+'" |
-| **Metadata** | Visitt vertical (Commercial/Residential/etc.), Hubspot Deal ID, Country, Hubspot vertical Ã¢ÂÂ all sync with HubSpot |
-| **Onboarding** | Stage and Date Ã¢ÂÂ sync to HubSpot |
-| **Payment** | Date, MRR, Lost At Ã¢ÂÂ synced from HubSpot |
-| **Pilot Period** | Date range for the trial period (e.g., 3/23/26 Ã¢ÂÂ 5/7/26, 45 days) with Submit button |
+| **Metadata** | Visitt vertical (Commercial/Residential/etc.), Hubspot Deal ID, Country, Hubspot vertical ÃÂ¢ÃÂÃÂ all sync with HubSpot |
+| **Onboarding** | Stage and Date ÃÂ¢ÃÂÃÂ sync to HubSpot |
+| **Payment** | Date, MRR, Lost At ÃÂ¢ÃÂÃÂ synced from HubSpot |
+| **Pilot Period** | Date range for the trial period (e.g., 3/23/26 ÃÂ¢ÃÂÃÂ 5/7/26, 45 days) with Submit button |
 | **Broadcasts monthly limit** | DEFAULT 1000/month; 5000/month (250NIS / $50); 10000/month (450NIS / $95) |
-| **Webhooks** | Add webhook button Ã¢ÂÂ for external event subscriptions |
+| **Webhooks** | Add webhook button ÃÂ¢ÃÂÃÂ for external event subscriptions |
 | **API partners** | Add API partner button |
 | **Add Integration (Accounting)** | Yardi (full sync + push WOs/charges), MRI (full sync + push charges), Rent Manager (full sync + push WOs) |
 | **Add Integration (Building)** | SwiftConnect (QR code access control for 20+ systems), Azure Calendar (sync amenity bookings to room displays) |
@@ -997,12 +997,12 @@ These are features in development or rolled out selectively. Names with `[Fattal
 | **App Links** | VendorPM (auto-login link), SV3 Visitor (visitor system), SV3 Vehicle (vehicle system) |
 | **Danger** | Disable property, Anonymize property |
 
-> **See log button**: Next to the "Features" heading there's a "See log" button that shows the full history of every feature flag change Ã¢ÂÂ who changed it and when.
+> **See log button**: Next to the "Features" heading there's a "See log" button that shows the full history of every feature flag change ÃÂ¢ÃÂÃÂ who changed it and when.
 
 ---
 
 ### Level 3: Property Admin (company-settings)
-**URL**: `/company-settings` (context-sensitive Ã¢ÂÂ shows settings for whichever property is selected in top-right dropdown)
+**URL**: `/company-settings` (context-sensitive ÃÂ¢ÃÂÃÂ shows settings for whichever property is selected in top-right dropdown)
 **How to reach**: Admin link in left sidebar OR direct URL
 
 **Tabs**:
@@ -1024,7 +1024,7 @@ These are features in development or rolled out selectively. Names with `[Fattal
 - Live preview on right shows real-time appearance of tenant app
 
 #### Tenant App > Requests
-- "Set categories and custom fields" Ã¢ÂÂ manage which request categories tenants can see
+- "Set categories and custom fields" ÃÂ¢ÃÂÃÂ manage which request categories tenants can see
 - "Select spaces or equipment" dropdown to filter by location
 
 #### Tenant App > Tenant app pages
@@ -1042,7 +1042,7 @@ These are features in development or rolled out selectively. Names with `[Fattal
 | Page | URL Pattern | Notes |
 |---|---|---|
 | Customer settings | `/customer/[slug]#settings` | Customer-level, affects all properties |
-| Property Super-Admin (Feature Flags) | `/company/[id]#settings` Ã¢ÂÂ Super-Admin tab | Property-level, navigate via customer Ã¢ÂÂ Properties |
+| Property Super-Admin (Feature Flags) | `/company/[id]#settings` ÃÂ¢ÃÂÃÂ Super-Admin tab | Property-level, navigate via customer ÃÂ¢ÃÂÃÂ Properties |
 | Property Admin | `/company-settings#[tab]` | Context-sensitive per selected property |
 | Property Admin - General | `/company-settings#general` | |
 | Property Admin - Tenant App | `/company-settings?activeSideMenuItem=details#portal` | |
@@ -1051,13 +1051,13 @@ These are features in development or rolled out selectively. Names with `[Fattal
 
 ---
 
-## Visitt+ Portal Ã¢ÂÂ Full Architecture & Relationship to Admin (2026-03-22)
+## Visitt+ Portal ÃÂ¢ÃÂÃÂ Full Architecture & Relationship to Admin (2026-03-22)
 
 **Visitt+** is the tenant-facing mobile app (PWA). It runs at a completely separate URL from the admin:
 - **Admin (Visitt)**: `staging.visitt.io` / `app.visitt.io`
 - **Tenant portal (Visitt+)**: `portal-staging.visitt.io/p/{portalId}/home`
 
-The `portalId` is a unique ID per property. Find it via Admin Ã¢ÂÂ Company-Settings Ã¢ÂÂ Tenant App tab Ã¢ÂÂ Visitt+ Live edit link Ã¢ÂÂ URL contains `/p/{portalId}/`.
+The `portalId` is a unique ID per property. Find it via Admin ÃÂ¢ÃÂÃÂ Company-Settings ÃÂ¢ÃÂÃÂ Tenant App tab ÃÂ¢ÃÂÃÂ Visitt+ Live edit link ÃÂ¢ÃÂÃÂ URL contains `/p/{portalId}/`.
 
 ---
 
@@ -1067,21 +1067,21 @@ Everything a tenant sees in Visitt+ is controlled from the Visitt admin. The ful
 
 ```
 Visitt Admin                              Visitt+ (Tenant Portal)
-Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ                         Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
-1. Create Tenant (setTenant)           Ã¢ÂÂ  Tenant exists
-2. Add Contact Ã¢ÂÂ link to Tenant        Ã¢ÂÂ  Contact can log into Visitt+
-3. Assign Leasable Space to Tenant     Ã¢ÂÂ  Contact can create requests
-4. Configure Tenant App Ã¢ÂÂ Requests     Ã¢ÂÂ  Request categories appear
-   (Company-Settings Ã¢ÂÂ Tenant App Ã¢ÂÂ
-    Requests Ã¢ÂÂ Select spaces/equipment)
-5. Create Amenity + set schedule       Ã¢ÂÂ  Amenity appears in /book-amenity
+ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ                         ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ
+1. Create Tenant (setTenant)           ÃÂ¢ÃÂÃÂ  Tenant exists
+2. Add Contact ÃÂ¢ÃÂÃÂ link to Tenant        ÃÂ¢ÃÂÃÂ  Contact can log into Visitt+
+3. Assign Leasable Space to Tenant     ÃÂ¢ÃÂÃÂ  Contact can create requests
+4. Configure Tenant App ÃÂ¢ÃÂÃÂ Requests     ÃÂ¢ÃÂÃÂ  Request categories appear
+   (Company-Settings ÃÂ¢ÃÂÃÂ Tenant App ÃÂ¢ÃÂÃÂ
+    Requests ÃÂ¢ÃÂÃÂ Select spaces/equipment)
+5. Create Amenity + set schedule       ÃÂ¢ÃÂÃÂ  Amenity appears in /book-amenity
    (must have slots on TODAY's day of week)
 ```
 
 If any step is missing, Visitt+ shows errors or empty screens:
-- "You cannot create a request" Ã¢ÂÂ contact not linked to tenant, or tenant has no leasable space
-- Empty categories on create-request page Ã¢ÂÂ Tenant App Ã¢ÂÂ Requests categories not configured
-- No amenity card in /book-amenity Ã¢ÂÂ amenity has no schedule for today's day of week, OR Amenities feature flag is OFF
+- "You cannot create a request" ÃÂ¢ÃÂÃÂ contact not linked to tenant, or tenant has no leasable space
+- Empty categories on create-request page ÃÂ¢ÃÂÃÂ Tenant App ÃÂ¢ÃÂÃÂ Requests categories not configured
+- No amenity card in /book-amenity ÃÂ¢ÃÂÃÂ amenity has no schedule for today's day of week, OR Amenities feature flag is OFF
 
 ---
 
@@ -1090,7 +1090,7 @@ If any step is missing, Visitt+ shows errors or empty screens:
 | Page | URL | Purpose |
 |------|-----|---------|
 | Home | `/p/{portalId}/home` | Dashboard |
-| Book amenity | `/p/{portalId}/book-amenity` | Select amenity Ã¢ÂÂ date Ã¢ÂÂ slot Ã¢ÂÂ confirm |
+| Book amenity | `/p/{portalId}/book-amenity` | Select amenity ÃÂ¢ÃÂÃÂ date ÃÂ¢ÃÂÃÂ slot ÃÂ¢ÃÂÃÂ confirm |
 | My requests | `/p/{portalId}/requests` | Work order list |
 | Create request | `/p/{portalId}/create-request` | New WO form |
 | Inbox | `/p/{portalId}/broadcasts` | Broadcast messages |
@@ -1100,33 +1100,33 @@ Staging Apex Tower portalId: `69bfd1a7633d48b012df1fb5`
 
 ---
 
-### Create Request Ã¢ÂÂ Prerequisites Checklist
+### Create Request ÃÂ¢ÃÂÃÂ Prerequisites Checklist
 
 ALL of the following must be true before a contact can create a request:
 
-1. Ã¢ÂÂ Contact linked to a Tenant (setTenant `contacts: [{_id: contactId}]`)
-2. Ã¢ÂÂ Tenant has at least one **leasable space** (`isLeased: true`)
-3. Ã¢ÂÂ Tenant App Ã¢ÂÂ Requests has categories configured for the portal
-   - Admin Ã¢ÂÂ Company-Settings Ã¢ÂÂ Tenant App Ã¢ÂÂ Requests Ã¢ÂÂ "Select spaces or equipment"
-   - Select categories Ã¢ÂÂ Save changes
-   - Without this: create-request page shows blank Ã¢ÂÂ no categories, can't submit
+1. ÃÂ¢ÃÂÃÂ Contact linked to a Tenant (setTenant `contacts: [{_id: contactId}]`)
+2. ÃÂ¢ÃÂÃÂ Tenant has at least one **leasable space** (`isLeased: true`)
+3. ÃÂ¢ÃÂÃÂ Tenant App ÃÂ¢ÃÂÃÂ Requests has categories configured for the portal
+   - Admin ÃÂ¢ÃÂÃÂ Company-Settings ÃÂ¢ÃÂÃÂ Tenant App ÃÂ¢ÃÂÃÂ Requests ÃÂ¢ÃÂÃÂ "Select spaces or equipment"
+   - Select categories ÃÂ¢ÃÂÃÂ Save changes
+   - Without this: create-request page shows blank ÃÂ¢ÃÂÃÂ no categories, can't submit
 
 ---
 
-### Amenity Card in /book-amenity Ã¢ÂÂ Visibility Rules (critical, 2026-03-22)
+### Amenity Card in /book-amenity ÃÂ¢ÃÂÃÂ Visibility Rules (critical, 2026-03-22)
 
 Even if the amenity exists and is in Apollo cache (`totalCount: 1`), the card won't render if:
 - The amenity has **no time slots for today's day of week** (e.g., amenity is Friday-only, today is Sunday)
-- The **Amenities feature flag is OFF** (`/company/{id}#settings` Ã¢ÂÂ Super-Admin Ã¢ÂÂ Tenants Ã¢ÂÂ Amenities toggle)
+- The **Amenities feature flag is OFF** (`/company/{id}#settings` ÃÂ¢ÃÂÃÂ Super-Admin ÃÂ¢ÃÂÃÂ Tenants ÃÂ¢ÃÂÃÂ Amenities toggle)
 
-Fix: edit the amenity at `/amenity/{amenityId}/edit` Ã¢ÂÂ add schedule entries for the required days.
+Fix: edit the amenity at `/amenity/{amenityId}/edit` ÃÂ¢ÃÂÃÂ add schedule entries for the required days.
 
 **Work orders** created via Visitt+ appear in admin as standard issues (filter by Contact or Tenant in `/issues`).
 **Amenity bookings** appear as `type: "amenity_booking"` at `/amenities#amenity-bookings`.
 
 ---
 
-### Tenant App Categories Ã¢ÂÂ How to Configure
+### Tenant App Categories ÃÂ¢ÃÂÃÂ How to Configure
 
 Per-portal configuration (not shared across properties):
 
@@ -1141,17 +1141,17 @@ Without this, the Visitt+ create-request page is completely blank.
 
 ### Portal ID Discovery
 
-The `portalId` Ã¢ÂÂ  `companyId`. To find it:
-- Admin Ã¢ÂÂ Company-Settings Ã¢ÂÂ Tenant App Ã¢ÂÂ "Visitt+ Live edit" link Ã¢ÂÂ URL has `/p/{portalId}/`
-- Or: Apollo cache on admin page Ã¢ÂÂ look for `Portal` type objects
+The `portalId` ÃÂ¢ÃÂÃÂ  `companyId`. To find it:
+- Admin ÃÂ¢ÃÂÃÂ Company-Settings ÃÂ¢ÃÂÃÂ Tenant App ÃÂ¢ÃÂÃÂ "Visitt+ Live edit" link ÃÂ¢ÃÂÃÂ URL has `/p/{portalId}/`
+- Or: Apollo cache on admin page ÃÂ¢ÃÂÃÂ look for `Portal` type objects
 
 ---
 
-## Building Visualization Template (LOCKED Ã¢ÂÂ Do Not Improvise)
+## Building Visualization Template (LOCKED ÃÂ¢ÃÂÃÂ Do Not Improvise)
 
 **Rules:**
 - ALWAYS use this exact template for building previews
-- Only replace the `BUILDING` data object Ã¢ÂÂ NEVER change styling/layout/components
+- Only replace the `BUILDING` data object ÃÂ¢ÃÂÃÂ NEVER change styling/layout/components
 - Design: minimal white tree view, recursive nodes, connecting lines, collapsible
 
 **Design system:**
@@ -1159,7 +1159,7 @@ The `portalId` Ã¢ÂÂ  `companyId`. To find it:
 |------|-----|-------|------|
 | floor | 12px square, blue glow | #3b82f6 | 15px bold |
 | site | 8px circle | #94a3b8 | 13.5px medium |
-| leasable | 8px circle + "ÃÂÃÂÃÂ©ÃÂÃÂ¨ÃÂ" tag | #22c55e | 13.5px medium |
+| leasable | 8px circle + "ÃÂÃÂÃÂÃÂÃÂÃÂ©ÃÂÃÂÃÂÃÂ¨ÃÂÃÂ" tag | #22c55e | 13.5px medium |
 | equipment | 6px circle | #f59e0b | 12.5px regular muted |
 | tenant | inline after arrow | #7c3aed | 11.5px |
 
@@ -1174,27 +1174,27 @@ BUILDING = {
 ```
 
 Full JSX template is in `references/automation-builder-template.jsx` (adapt for buildings).
-Only replace the BUILDING data object Ã¢ÂÂ never change layout or styling.
+Only replace the BUILDING data object ÃÂ¢ÃÂÃÂ never change layout or styling.
 
 ---
 
-## Automation Builder Template (LOCKED Ã¢ÂÂ Do Not Improvise)
+## Automation Builder Template (LOCKED ÃÂ¢ÃÂÃÂ Do Not Improvise)
 
-**Purpose**: Visual preview for automation deployment Ã¢ÂÂ MUST appear before any deploy.
+**Purpose**: Visual preview for automation deployment ÃÂ¢ÃÂÃÂ MUST appear before any deploy.
 
 **Rules:**
 - ALWAYS use the locked template JSX for automation previews
-- Only replace the `PROPERTY_DATA` object Ã¢ÂÂ NEVER change styling/layout/components
+- Only replace the `PROPERTY_DATA` object ÃÂ¢ÃÂÃÂ NEVER change styling/layout/components
 - Status `"existing"` = green badge, `"new"` = blue badge
 - The Builder is the MANDATORY approval layer between discussion and deployment
 
-**Workflow (CRITICAL Ã¢ÂÂ Never Skip):**
-1. **Talk** Ã¢ÂÂ User says what they want
-2. **Update PROPERTY_DATA** Ã¢ÂÂ Fill with real data (categories, users, existing automations, new ones as status: "new")
-3. **Present Builder** Ã¢ÂÂ User reviews the JSX preview
-4. **User approves** Ã¢ÂÂ "ÃÂ©ÃÂÃÂ¨" / "ÃÂªÃÂ ÃÂÃÂ¨ÃÂÃÂ©" / "ÃÂÃÂ©ÃÂ¨"
-5. **Deploy** Ã¢ÂÂ Only NOW run createAutomation/updateAutomation API calls
-6. **Update Builder** Ã¢ÂÂ Change deployed items from `"new"` to `"existing"`
+**Workflow (CRITICAL ÃÂ¢ÃÂÃÂ Never Skip):**
+1. **Talk** ÃÂ¢ÃÂÃÂ User says what they want
+2. **Update PROPERTY_DATA** ÃÂ¢ÃÂÃÂ Fill with real data (categories, users, existing automations, new ones as status: "new")
+3. **Present Builder** ÃÂ¢ÃÂÃÂ User reviews the JSX preview
+4. **User approves** ÃÂ¢ÃÂÃÂ "ÃÂÃÂ©ÃÂÃÂÃÂÃÂ¨" / "ÃÂÃÂªÃÂÃÂ ÃÂÃÂÃÂÃÂ¨ÃÂÃÂÃÂÃÂ©" / "ÃÂÃÂÃÂÃÂ©ÃÂÃÂ¨"
+5. **Deploy** ÃÂ¢ÃÂÃÂ Only NOW run createAutomation/updateAutomation API calls
+6. **Update Builder** ÃÂ¢ÃÂÃÂ Change deployed items from `"new"` to `"existing"`
 
 **PROPERTY_DATA structure:**
 ```
@@ -1217,7 +1217,7 @@ Always copy from the locked template and only replace the PROPERTY_DATA object.
 
 
 
-## Building Visualization Template â Tree Format (2026-03-25)
+## Building Visualization Template Ã¢ÂÂ Tree Format (2026-03-25)
 
 **MANDATORY**: Before ANY deployment to Visitt, generate a React JSX tree visualization for user approval.
 
@@ -1234,14 +1234,14 @@ The visualization MUST be an **interactive tree** (not cards, not grids, not das
 - Legend at top showing counts per type
 - Hint at bottom for click to expand
 - RTL direction
-- Clean, minimal â NO heavy headers, NO stat cards, NO gradients
+- Clean, minimal Ã¢ÂÂ NO heavy headers, NO stat cards, NO gradients
 
 ### What NOT to do:
 - Card-based layouts with colored borders
 - Dashboard-style stat boxes at the top
 - Gradient headers
 - Floor accordion panels with wrapped tag grids
-- These are all rejected formats â the user wants ONLY the tree format
+- These are all rejected formats Ã¢ÂÂ the user wants ONLY the tree format
 
 
 ---
