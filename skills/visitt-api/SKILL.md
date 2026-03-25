@@ -1,9 +1,9 @@
 ---
 name: visitt-api
-description: "Visitt GraphQL API skill for reading and writing data to the Visitt property management platform via API calls. Covers BOTH the internal frontend API and the Partner API. Use this skill whenever the user asks to create, read, update, or delete data in Visitt programmatically — tenants, contacts, work orders, inspections, categories, buildings, floors, spaces, equipment, properties, charges, billable items. Also triggers on: Visitt API, GraphQL, partner API, bulk data operations via API, webhook setup, demo property creation, or when the task would be faster via API than UI (e.g., creating 5+ entities). If the user mentions API, endpoint, query, mutation, or programmatic access to Visitt — use this skill."
+description: "Visitt GraphQL API skill for reading and writing data to the Visitt property management platform via API calls. Covers BOTH the internal frontend API and the Partner API. Use this skill whenever the user asks to create, read, update, or delete data in Visitt programmatically â tenants, contacts, work orders, inspections, categories, buildings, floors, spaces, equipment, properties, charges, billable items. Also triggers on: Visitt API, GraphQL, partner API, bulk data operations via API, webhook setup, demo property creation, or when the task would be faster via API than UI (e.g., creating 5+ entities). If the user mentions API, endpoint, query, mutation, or programmatic access to Visitt â use this skill."
 ---
 
-# Visitt GraphQL API — Operational Guide
+# Visitt GraphQL API â Operational Guide
 
 ## Two APIs Available
 
@@ -12,14 +12,14 @@ Visitt has TWO GraphQL APIs:
 ### 1. Internal Frontend API (primary for automation)
 - **Endpoint:** `https://staging.visitt.io/graphql` (staging) or `https://app.visitt.io/graphql` (production)
 - **Auth:** Session cookies (same as logged-in browser session)
-- **Scope:** Full access — buildings, floors, spaces, equipment, tenants, contacts, everything
+- **Scope:** Full access â buildings, floors, spaces, equipment, tenants, contacts, everything
 - **Best for:** Browser-based automation via `javascript_tool` (fetch from same origin)
 - **Introspection:** Disabled (Apollo Server)
 
 ### 2. Partner API (external integrations)
 - **Endpoint:** `https://partner-api.visitt.io/graphql`
 - **Auth:** Bearer token in Authorization header
-- **Scope:** Limited — tenants, contacts, work orders, categories, billing. NO building/floor/space creation.
+- **Scope:** Limited â tenants, contacts, work orders, categories, billing. NO building/floor/space creation.
 - **Best for:** External scripts, webhooks, integrations
 - **Docs:** https://partner-api.visitt.io/
 
@@ -40,12 +40,12 @@ The API arm is best when:
 - Creating 5+ entities of the same type (buildings, floors, spaces, equipment)
 - Setting up a full demo property (building + floors + spaces + equipment + tenants + contacts)
 - Reading data for reports or analysis
-- Speed matters — API calls are faster than UI navigation
+- Speed matters â API calls are faster than UI navigation
 
 Use UI (visitt-workflow skill) when: the task involves visual configuration, settings pages, or workflows not exposed in the API.
 Use Import (visitt-import skill) when: the user has a CSV file ready or the task is a one-time bulk data load.
 
-## Internal API — Discovered Mutations (verified 2026-03-17)
+## Internal API â Discovered Mutations (verified 2026-03-17)
 
 These mutations were captured from the Visitt frontend. Use them via `fetch('/graphql', ...)` from the browser.
 
@@ -118,10 +118,10 @@ mutation insertSpace($input: InsertSiteInput!) {
 }
 ```
 **modelType values:**
-- `"site"` — regular space (base building space)
-- `"leasable_site"` — leasable space (can be assigned to tenants)
-- `"equipment"` — equipment item
-- `"floor"` — floor (but use upsertFloors instead)
+- `"site"` â regular space (base building space)
+- `"leasable_site"` â leasable space (can be assigned to tenants)
+- `"equipment"` â equipment item
+- `"floor"` â floor (but use upsertFloors instead)
 
 **CRITICAL:** `insertSite` does NOT assign spaces to floors. Spaces are created under "Spaces & equipment without floors". You MUST call `changeSitesLocation` after creation to assign them to floors. See below.
 
@@ -143,17 +143,17 @@ mutation changeSitesLocation($buildingId: String!, $parentSiteId: String!, $site
 }
 ```
 **Key notes:**
-- `parentSiteId` is the floor's site ID (from `upsertFloors` response — same IDs)
-- You can pass multiple `siteIds` in one call — **batch all entities per floor into one call** for efficiency
-- Requires all 3 parameters (`buildingId`, `parentSiteId`, `siteIds`) — omitting `buildingId` causes silent failure
+- `parentSiteId` is the floor's site ID (from `upsertFloors` response â same IDs)
+- You can pass multiple `siteIds` in one call â **batch all entities per floor into one call** for efficiency
+- Requires all 3 parameters (`buildingId`, `parentSiteId`, `siteIds`) â omitting `buildingId` causes silent failure
 - Also works for nesting sub-spaces under parent spaces (set `parentSiteId` to the parent space ID)
 
 **Optimal deployment flow (verified 2026-03-19):**
 ```
-1. insertBuilding       → get buildingId
-2. upsertFloors         → get floor IDs
-3. insertSite ×N        → create all spaces/equipment (batch with concurrency 5, delay 400ms)
-4. changeSitesLocation  → one call PER FLOOR to assign entities (batch siteIds per floor)
+1. insertBuilding       â get buildingId
+2. upsertFloors         â get floor IDs
+3. insertSite ÃN        â create all spaces/equipment (batch with concurrency 5, delay 400ms)
+4. changeSitesLocation  â one call PER FLOOR to assign entities (batch siteIds per floor)
 ```
 Performance: 49 entities created in 6.3s + floor assignment in 3.2s = ~10s total.
 
@@ -178,7 +178,7 @@ mutation setTenant($input: TenantInput!) {
   }
 }
 ```
-**Variables (full update — verified 2026-03-20):**
+**Variables (full update â verified 2026-03-20):**
 ```json
 {
   "input": {
@@ -208,13 +208,13 @@ mutation setTenant($input: TenantInput!) {
 ```
 **Key notes:**
 - `setTenant` is used for BOTH create and update. Include `tenantId` field to update existing.
-- `locations[].isLeased: true` → Leased space (exclusive use). `isLeased: false` → Authorized space (work order creation rights only).
-- `contacts[].roles` → admin roles for the contact within this tenant. Empty array = regular contact.
-- **IMPORTANT**: `setTenant` replaces the ENTIRE tenant. When updating locations, include ALL existing contacts in the `contacts` array, and vice versa — omitting them removes them.
+- `locations[].isLeased: true` â Leased space (exclusive use). `isLeased: false` â Authorized space (work order creation rights only).
+- `contacts[].roles` â admin roles for the contact within this tenant. Empty array = regular contact.
+- **IMPORTANT**: `setTenant` replaces the ENTIRE tenant. When updating locations, include ALL existing contacts in the `contacts` array, and vice versa â omitting them removes them.
 - Space options are fetched via `allSites` query: `{input: {companyId: "PROPERTY_ID"}}`
 
 ### addContacts
-Creates one or more contacts. Can link directly to a tenant during creation. — verified 2026-03-20
+Creates one or more contacts. Can link directly to a tenant during creation. â verified 2026-03-20
 ```graphql
 mutation addContacts($input: [ContactInput!]!) {
   addContacts(input: $input) {
@@ -225,7 +225,7 @@ mutation addContacts($input: [ContactInput!]!) {
   }
 }
 ```
-**Variables (full — verified 2026-03-20):**
+**Variables (full â verified 2026-03-20):**
 ```json
 {
   "input": [
@@ -249,14 +249,14 @@ mutation addContacts($input: [ContactInput!]!) {
 ```
 **Key notes:**
 - `tenants[].isAdmin: true` makes the contact an admin for that tenant (can manage work orders in Visitt+)
-- `locations` — `[ContactLocationInput]` — optional building/space-level assignment, use `[]` if not needed
-- `supervisedContactIds` — contacts this person supervises, use `[]` if not needed
+- `locations` â `[ContactLocationInput]` â optional building/space-level assignment, use `[]` if not needed
+- `supervisedContactIds` â contacts this person supervises, use `[]` if not needed
 - Batch: pass multiple objects in the `input` array to create many contacts at once
 - After creation, if invite toggle is ON, a `createBroadcast` fires automatically with welcome email template `"not_invited_to_portal_contacts"`
 - Global contacts URL: `/tenants#contacts`; per-tenant contacts: `/tenant/<id>?activeSideMenuItem=contacts`
-- **Phone validation (2026-03-21):** The API validates Israeli phones with libphonenumber. Format MUST be `+97250XXXXXXX` / `+97252XXXXXXX` / `+97254XXXXXXX` (9 digits after +972). Sub-ranges like `052-1XXXXXX` (`+9725[12]1XXXXXX`) may fail validation — they're unallocated. **Always test one contact first before batching 50.** Use distinct test emails/phones (e.g. `_test_@...`) to avoid polluting the system with dummy contacts that then block real ones via duplicate-phone/email check.
+- **Phone validation (2026-03-21):** The API validates Israeli phones with libphonenumber. Format MUST be `+97250XXXXXXX` / `+97252XXXXXXX` / `+97254XXXXXXX` (9 digits after +972). Sub-ranges like `052-1XXXXXX` (`+9725[12]1XXXXXX`) may fail validation â they're unallocated. **Always test one contact first before batching 50.** Use distinct test emails/phones (e.g. `_test_@...`) to avoid polluting the system with dummy contacts that then block real ones via duplicate-phone/email check.
 
-### tenants (internal query — verified 2026-03-21)
+### tenants (internal query â verified 2026-03-21)
 Get all tenants for a property. Note: uses `input: TenantSearchInput!` (not direct args).
 ```graphql
 query tenants($input: TenantSearchInput!) {
@@ -267,9 +267,9 @@ query tenants($input: TenantSearchInput!) {
 ```
 **Variables:** `{ "input": { "companyId": "PROPERTY_ID" } }`
 - `TenantSearchInput` does NOT accept `limit` or `skip` fields
-- Returns `PaginatedTenants { tenants[] }` — no `total` field
+- Returns `PaginatedTenants { tenants[] }` â no `total` field
 
-### Getting leasable sites via Apollo cache (fallback — 2026-03-21)
+### Getting leasable sites via Apollo cache (fallback â 2026-03-21)
 When `allSites` queries return empty (schema mismatch or missing buildingId), extract from Apollo cache instead:
 ```javascript
 const ac = window.__APOLLO_CLIENT__;
@@ -287,18 +287,18 @@ for (const [key, val] of Object.entries(cache)) {
 This works when already navigated to the building page (cache is pre-populated from UI queries). IDs extracted this way are valid for `setTenant locations[].siteId`.
 
 ### Other useful mutations discovered in code:
-- `updateBuilding` — UpdateBuildingInput!
-- `updateSite` — siteId: String!, input: UpdateSiteInput!
-- `deleteSites` — deletes spaces/equipment
-- `archiveBuilding` — buildingId, companyId, isAutoResolve
-- `changeSitesBuilding` — move sites between buildings
-- `changeSitesLocation` — move sites between floors
-- `updateContact` — contactId: String!, input: ContactInput!
-- `archiveContact` / `unarchiveContact` — contactId: String!
-- `deleteTenant` — tenantId: String!
-- `makeSpacesLeasable` (updateSitesModelType) — siteIds: [String]!, modelType: String!
+- `updateBuilding` â UpdateBuildingInput!
+- `updateSite` â siteId: String!, input: UpdateSiteInput!
+- `deleteSites` â deletes spaces/equipment
+- `archiveBuilding` â buildingId, companyId, isAutoResolve
+- `changeSitesBuilding` â move sites between buildings
+- `changeSitesLocation` â move sites between floors
+- `updateContact` â contactId: String!, input: ContactInput!
+- `archiveContact` / `unarchiveContact` â contactId: String!
+- `deleteTenant` â tenantId: String!
+- `makeSpacesLeasable` (updateSitesModelType) â siteIds: [String]!, modelType: String!
 
-### insertSite — equipment variant (verified 2026-03-20)
+### insertSite â equipment variant (verified 2026-03-20)
 Same `insertSite` mutation, but with `modelType: "equipment"` and extended equipment fields:
 ```json
 {
@@ -326,9 +326,9 @@ Same `insertSite` mutation, but with `modelType: "equipment"` and extended equip
 ```
 Frontend operation name for equipment is `insertSite` (same as spaces). Use `changeSitesLocation` if you need to assign to a floor.
 
-## Internal API — Key Queries
+## Internal API â Key Queries
 
-### tenants (list all tenants for a property) — verified 2026-03-20
+### tenants (list all tenants for a property) â verified 2026-03-20
 ```graphql
 query tenants($input: TenantsSearchInput!) {
   tenants(input: $input) {
@@ -342,7 +342,7 @@ query tenants($input: TenantsSearchInput!) {
 ```
 **Variables:** `{ "input": { "companyId": "PROPERTY_ID" } }`
 
-### tenant (single tenant detail) — verified 2026-03-20
+### tenant (single tenant detail) â verified 2026-03-20
 ```graphql
 query tenant($tenantId: String!) {
   tenant(tenantId: $tenantId) {
@@ -359,7 +359,7 @@ query tenant($tenantId: String!) {
 }
 ```
 
-### contacts (list contacts with filtering) — verified 2026-03-20
+### contacts (list contacts with filtering) â verified 2026-03-20
 ```graphql
 query contacts($input: ContactSearchInput!, $skip: Int!, $limit: Int!) {
   contacts(input: $input, skip: $skip, limit: $limit) {
@@ -385,7 +385,7 @@ query contacts($input: ContactSearchInput!, $skip: Int!, $limit: Int!) {
 ```
 Filter by tenant: add `"tenantId": "TENANT_ID"` to the input object.
 
-### sitesSearch (paginated space search with filtering) — verified 2026-03-20
+### sitesSearch (paginated space search with filtering) â verified 2026-03-20
 ```graphql
 query sitesSearch($input: SitesSearchInput, $skip: Int!, $limit: Int!, $sortBy: String, $sortDirection: String) {
   sitesSearch(input: $input, skip: $skip, limit: $limit, sortBy: $sortBy, sortDirection: $sortDirection) {
@@ -418,7 +418,7 @@ query sitesSearch($input: SitesSearchInput, $skip: Int!, $limit: Int!, $sortBy: 
 }
 ```
 
-### allSites (flat list of all spaces for a property) — verified 2026-03-20
+### allSites (flat list of all spaces for a property) â verified 2026-03-20
 ```graphql
 query allSites($input: SitesSearchInput) {
   allSites(input: $input) {
@@ -435,11 +435,11 @@ query allSites($input: SitesSearchInput) {
 ```
 **Variables:** `{ "input": { "companyId": "PROPERTY_ID" } }`
 
-> ⚠️ **CRITICAL (2026-03-22):** `allSites` does NOT accept `buildingId` in the input — passing it causes `GRAPHQL_VALIDATION_FAILED`. To get sites for a specific building, use the `building(buildingId)` query below instead.
+> â ï¸ **CRITICAL (2026-03-22):** `allSites` does NOT accept `buildingId` in the input â passing it causes `GRAPHQL_VALIDATION_FAILED`. To get sites for a specific building, use the `building(buildingId)` query below instead.
 
 Used to populate space selectors in tenant locations, inspections, etc.
 
-### building (get sites for a specific building) — verified 2026-03-22
+### building (get sites for a specific building) â verified 2026-03-22
 Use this when you need leasable or regular spaces scoped to one building.
 ```graphql
 query {
@@ -474,7 +474,7 @@ query buildings($companyId: String) {
 ### buildingStructure (get floors and spaces for a building)
 Use `fetchBuildingFloors` or `buildingStructure` queries to get the hierarchy.
 
-### companies (get all properties for a customer) — verified 2026-03-20
+### companies (get all properties for a customer) â verified 2026-03-20
 ```graphql
 query {
   companies(customerId: ["generic_customer"], limit: 40, skip: 0) {
@@ -483,9 +483,9 @@ query {
 }
 ```
 **CRITICAL gotchas (discovered by trial and error):**
-- `limit` and `skip` are REQUIRED — omitting either causes a validation error
-- The return type is `PaginatedCompanies`. The nested data field is called `companies` (same name as the query). NOT `data`, `results`, `nodes`, `items`, or `edges` — those all fail
-- `total` field does NOT exist on `PaginatedCompanies` — remove it if you see it
+- `limit` and `skip` are REQUIRED â omitting either causes a validation error
+- The return type is `PaginatedCompanies`. The nested data field is called `companies` (same name as the query). NOT `data`, `results`, `nodes`, `items`, or `edges` â those all fail
+- `total` field does NOT exist on `PaginatedCompanies` â remove it if you see it
 - `customerId` is an array: `["customer_slug"]`
 
 **Correct pattern to get property IDs:**
@@ -499,7 +499,7 @@ fetch('/graphql', {
 });
 ```
 
-### Multi-Property Bulk Deployment Pattern — verified 2026-03-20
+### Multi-Property Bulk Deployment Pattern â verified 2026-03-20
 
 Use this pattern any time a task needs to run across ALL properties of a customer (categories, inspections, automations, etc.).
 
@@ -537,9 +537,9 @@ for (const prop of withSites) {
 ```
 
 **Performance benchmarks (verified 2026-03-20):**
-- 24 inspections (12 properties × 2) → ~12 seconds
-- 600 categories (30 properties × 20) → ~25 seconds
-- 150 automations (30 properties × 5) → ~24 seconds
+- 24 inspections (12 properties Ã 2) â ~12 seconds
+- 600 categories (30 properties Ã 20) â ~25 seconds
+- 150 automations (30 properties Ã 5) â ~24 seconds
 
 **Important:** Always store intermediate results in `localStorage` (not `window._var`) when doing multi-step queries. `window._var` is lost if you accidentally navigate. `localStorage` survives SPA navigation.
 
@@ -548,7 +548,7 @@ for (const prop of withSites) {
 query { allCategories(companyId: "COMPANY_ID") { _id name } }
 ```
 
-### Category mutations — verified 2026-03-20
+### Category mutations â verified 2026-03-20
 ```graphql
 # Remove category from a property (unassign, not delete)
 mutation { removeCategoryFromCompany(categoryId: "ID", companyId: "COMPANY_ID") }
@@ -563,7 +563,7 @@ mutation createCategory($input: CategoryInput!) {
 # Variables: { input: { name: "Fire Safety", companyId: "COMPANY_ID", customerId: "SLUG" } }
 ```
 
-### Automation mutations — verified 2026-03-20
+### Automation mutations â verified 2026-03-20
 ```graphql
 mutation createAutomation($input: AutomationInput!) {
   createAutomation(input: $input) { _id }
@@ -573,9 +573,9 @@ mutation createAutomation($input: AutomationInput!) {
 - `actionValue` is ALWAYS a string, even for JSON objects: `'{"number":4,"unit":"hours"}'`
 - `eventFields` MUST include `companyId`: `{ companyId: "COMPANY_ID", categoryIds: [...] }`
 - `triggerDelay` only for `issue_not_seen` / `issue_not_completed` events
-- Category IDs must be fetched first — never assume names match IDs
+- Category IDs must be fetched first â never assume names match IDs
 
-### createAssignment (Inspections) — verified 2026-03-20
+### createAssignment (Inspections) â verified 2026-03-20
 
 Inspections are called "assignments" in the API. One mutation handles all frequency types.
 
@@ -628,7 +628,7 @@ mutation createAssignment($input: CreateAssignmentInput!) {
 }
 ```
 
-**Interval values (frequency → API value):**
+**Interval values (frequency â API value):**
 | UI Label | `interval` value | `daysInWeek` | `completionEndOfUnit` |
 |----------|-----------------|--------------|----------------------|
 | Hourly | `"hour"` | all days | `"hour"` |
@@ -643,7 +643,7 @@ mutation createAssignment($input: CreateAssignmentInput!) {
 | Annual | `"year"` | `[]` | `"year"` |
 | Custom | `"custom"` | varies | varies |
 
-Note: Only `"week"` confirmed by capture. Others inferred from pattern — verify if they fail.
+Note: Only `"week"` confirmed by capture. Others inferred from pattern â verify if they fail.
 
 **Task types (`subItems[].type`):**
 | UI Label | API type |
@@ -660,7 +660,7 @@ Note: Only `"week"` confirmed by capture. Others inferred from pattern — verif
 
 **Multi-space inspections:** Include all siteIds from all item groups in the top-level `siteIds` array. Create separate `items` entries per space group if different tasks are needed per space.
 
-**UI URL:** `/assignments#manageVisits` — Inspections list page. Use `#openVisits` for currently open inspections, `#manageVisits` for all inspection templates.
+**UI URL:** `/assignments#manageVisits` â Inspections list page. Use `#openVisits` for currently open inspections, `#manageVisits` for all inspection templates.
 
 **Bulk creation pattern (20 inspections in ~10s):**
 ```javascript
@@ -720,7 +720,7 @@ curl -X POST https://partner-api.visitt.io/graphql \
   -d '{"query": "{ buildings { id name } }"}'
 ```
 
-The token is scoped to a single company. It's provided by Visitt and must be kept secret — never log it, commit it, or expose it.
+The token is scoped to a single company. It's provided by Visitt and must be kept secret â never log it, commit it, or expose it.
 
 ## Available Queries (Read Operations)
 
@@ -787,9 +787,9 @@ The token is scoped to a single company. It's provided by Visitt and must be kep
 ## Category Management via API
 
 Categories live at the account level (not property level). A category can be assigned to multiple properties. The hierarchy:
-- Account → has categories
-- Property → has assigned categories (subset of account categories)
-- Categories can have subcategories (e.g., "Plumbing" → "Leak", "Clogged Drain")
+- Account â has categories
+- Property â has assigned categories (subset of account categories)
+- Categories can have subcategories (e.g., "Plumbing" â "Leak", "Clogged Drain")
 
 To add a category to a property: use `assignCategory` (if it exists in the account) or `createCategory` (to create and assign in one step).
 
@@ -808,7 +808,7 @@ Subscribe to events and get notified via HTTPS POST. Verify webhook authenticity
 
 ## Rate Limits
 
-Each token has per-operation rate limits. File upload is limited to 20 requests per 60 seconds. Plan batch operations accordingly — add delays between large batches.
+Each token has per-operation rate limits. File upload is limited to 20 requests per 60 seconds. Plan batch operations accordingly â add delays between large batches.
 
 ## Common Patterns
 
@@ -840,17 +840,17 @@ For bulk creation, loop through records and call createTenant for each. Respect 
 }
 ```
 
-## Demo Property Setup via API — Full Flow
+## Demo Property Setup via API â Full Flow
 
 This is the sequence for creating a complete demo property setup using the internal API:
 
 ```
-1. insertBuilding  → get buildingId
-2. upsertFloors    → create all floors at once (get floor IDs from response)
-3. insertSite ×N   → create spaces on each floor (modelType: "site")
-4. insertSite ×N   → create equipment on each floor (modelType: "equipment")
-5. setTenant ×N    → create tenants (get tenant IDs)
-6. addContacts     → create contacts linked to tenants
+1. insertBuilding  â get buildingId
+2. upsertFloors    â create all floors at once (get floor IDs from response)
+3. insertSite ÃN   â create spaces on each floor (modelType: "site")
+4. insertSite ÃN   â create equipment on each floor (modelType: "equipment")
+5. setTenant ÃN    â create tenants (get tenant IDs)
+6. addContacts     â create contacts linked to tenants
 ```
 
 **Estimated time:** ~10-20 seconds for a full property (vs 40-50 minutes via UI).
@@ -863,12 +863,12 @@ This is the sequence for creating a complete demo property setup using the inter
 
 - **Internal API naming confusion:** `companyId` in mutations often means "property ID", not "company ID"
 - `customerId` in insertBuilding is the customer's slug string (e.g., "skynet"), not an ObjectId
-- Token (Partner API) is scoped to one company — you can't cross-query between companies
+- Token (Partner API) is scoped to one company â you can't cross-query between companies
 - Category deletion only works if the category isn't used by any property globally
 - GraphQL errors return in the `errors` array, not as HTTP status codes
 - Introspection is disabled on both APIs (Apollo Server config)
-- `setTenant` is used for both create and update — presence of `_id` field determines which
-- `insertSite` is the underlying mutation for ALL site types (spaces, equipment, floors) — `modelType` controls what type is created
+- `setTenant` is used for both create and update â presence of `_id` field determines which
+- `insertSite` is the underlying mutation for ALL site types (spaces, equipment, floors) â `modelType` controls what type is created
 - Floor `_id` in upsertFloors should be `dummy_id_N` for new floors; server generates real IDs
 - The internal API uses the same `/graphql` endpoint for all operations; operationName helps with debugging
 
@@ -878,11 +878,11 @@ This is the sequence for creating a complete demo property setup using the inter
 - **Contact-tenant linking:** `ContactInput` requires `locations: []` but the format for assigning to a tenant is not `{ tenantId }`. Need to capture `ContactLocationInput` fields from UI.
 - **Leasable spaces work:** Setting `modelType: "leasable_site"` correctly creates leasable spaces.
 - **`companies` query requires pagination:** Must pass `limit: Int!` and `skip: Int!`. Response is nested: `data.companies.companies[]`. No `total` field on `PaginatedCompanies`.
-- **Duplicate names:** When creating multiple entities with the same name (e.g., "שירותים" on different floors), track IDs carefully — `allSites` won't distinguish them by name alone. Use creation order or query after creation to map correctly.
+- **Duplicate names:** When creating multiple entities with the same name (e.g., "×©××¨××ª××" on different floors), track IDs carefully â `allSites` won't distinguish them by name alone. Use creation order or query after creation to map correctly.
 
 ---
 
-## Visitors API — discovered 2026-03-21
+## Visitors API â discovered 2026-03-21
 
 ### createVisitor
 Creates a visitor pass. Used for both "Existing contact" and "Not a contact" modes.
@@ -897,7 +897,7 @@ mutation createVisitor($input: CreateVisitorInput!) {
   }
 }
 ```
-**Variables — "Not a contact" mode** (host is not in the contacts list):
+**Variables â "Not a contact" mode** (host is not in the contacts list):
 ```json
 {
   "input": {
@@ -910,7 +910,7 @@ mutation createVisitor($input: CreateVisitorInput!) {
   }
 }
 ```
-**Variables — "Existing contact" mode** (host is a registered contact):
+**Variables â "Existing contact" mode** (host is a registered contact):
 ```json
 {
   "input": {
@@ -923,21 +923,21 @@ mutation createVisitor($input: CreateVisitorInput!) {
 ```
 **Optional fields:** `email`, `comment`, `endDate` (for multi-day visits).
 
-**`arrivalTime: CreateVisitorArrivalTimeInput!`** — REQUIRED. Use `{ isAllDay: true }` for all-day. Specific time: likely `{ isAllDay: false, startTime: "09:00", endTime: "17:00" }` (TBD — capture from UI).
+**`arrivalTime: CreateVisitorArrivalTimeInput!`** â REQUIRED. Use `{ isAllDay: true }` for all-day. Specific time: likely `{ isAllDay: false, startTime: "09:00", endTime: "17:00" }` (TBD â capture from UI).
 
 **Permissions note:** Returns `Unauthorized` if logged-in user doesn't have visitor management rights for that property.
 
-**Useful query — visitors list:**
+**Useful query â visitors list:**
 ```graphql
 query visitors($input: VisitorsSearchInput!) {
   visitors(input: $input) { ... }
 }
 ```
-(Full query shape TBD — capture via GQL interceptor from `/visitors` page load)
+(Full query shape TBD â capture via GQL interceptor from `/visitors` page load)
 
 ---
 
-## Amenities API — discovered 2026-03-21
+## Amenities API â discovered 2026-03-21
 
 ### setAmenity
 Create or update an amenity. Same mutation for both. Include `_id` in input to update.
@@ -950,7 +950,7 @@ mutation setAmenity($input: AmenityInput!) {
 ```
 **AmenityItem fields:** `_id, name, buildingId, locationName, defaultAssignedUsers, images, image, description, roomEmailAddress, maxPeopleNumber, bookingTimes { dayOfWeek, timeRanges { start, end, isBillable } }, timeSlotDuration, timeSlotPrice, bookingInAdvanceRule { minInAdvance { enabled, value, unit } }`
 
-**AmenityInput fields** (from form): `name, buildingId, description, maxPeopleNumber, timeSlotDuration, timeSlotPrice, defaultAssignedUserIds, bookingTimes, bookingInAdvanceRule, roomEmailAddress` (exact field names TBD — capture via GQL interceptor on form submit)
+**AmenityInput fields** (from form): `name, buildingId, description, maxPeopleNumber, timeSlotDuration, timeSlotPrice, defaultAssignedUserIds, bookingTimes, bookingInAdvanceRule, roomEmailAddress` (exact field names TBD â capture via GQL interceptor on form submit)
 
 ### archiveAmenity
 Deletes/archives an amenity.
@@ -969,7 +969,7 @@ mutation updateAmenityBooking($amenityBookingId: String!, $input: UpdateAmenityB
 ```
 
 ### bookAmenity / deleteAmenityBooking / cancelAmenityBooking
-These mutations exist in the schema but return `GRAPHQL_VALIDATION_FAILED: Invalid query` when called directly. Must be captured via GQL interceptor from the "+ Book amenity" UI flow. Do not probe these directly — use the UI to trigger them and read from `localStorage._gql_captured`.
+These mutations exist in the schema but return `GRAPHQL_VALIDATION_FAILED: Invalid query` when called directly. Must be captured via GQL interceptor from the "+ Book amenity" UI flow. Do not probe these directly â use the UI to trigger them and read from `localStorage._gql_captured`.
 
 ### amenities query (list)
 ```graphql
@@ -995,14 +995,14 @@ query amenities($companyId: String!, $skip: Int!, $limit: Int!) {
 - `bookAmenity` input shape + `AmenityInput` exact field names (capture from UI)
 - Document page mutations: `createDocument`, `deleteDocument`, tag mutations
 
-## createAssignment — CRITICAL Corrections (verified 2026-03-21)
+## createAssignment â CRITICAL Corrections (verified 2026-03-21)
 
-**`completionPolicy: "end_of_unit"` FAILS** → error: "Missing inspection completion defenition of until end of unit"
+**`completionPolicy: "end_of_unit"` FAILS** â error: "Missing inspection completion defenition of until end of unit"
 
 Use `completionPolicy: "iso_duration"` + `completionISODuration` instead:
 | Frequency | `interval` | `completionISODuration` |
 |-----------|-----------|------------------------|
-| Daily | `"day"` | `"PT24H"` ✅ verified |
+| Daily | `"day"` | `"PT24H"` â verified |
 | Biweekly | `"biweekly"` | `"P14D"` (inferred, unverified) |
 | Weekly | `"week"` | `"P7D"` (inferred, unverified) |
 | Monthly | `"month"` | `"P1M"` (inferred, unverified) |
@@ -1024,12 +1024,12 @@ Use `completionPolicy: "iso_duration"` + `completionISODuration` instead:
   }
 }
 ```
-Simple items: `{ type, name }` objects directly in `items` array — accepted by server (no `sites_tasks` wrapper needed for basic inspections).
+Simple items: `{ type, name }` objects directly in `items` array â accepted by server (no `sites_tasks` wrapper needed for basic inspections).
 
-**deleteAssignment returns String! — no subfields:**
+**deleteAssignment returns String! â no subfields:**
 ```graphql
 mutation { deleteAssignment(assignmentId: "ASSIGNMENT_ID") }
-# ❌ WRONG: { deleteAssignment(...) { _id } }  ← fails
+# â WRONG: { deleteAssignment(...) { _id } }  â fails
 ```
 
 **assignment query (single inspection by ID):**
@@ -1039,31 +1039,31 @@ query { assignment(assignmentId: "ID") {
 }}
 ```
 
-## allUsers query — verified 2026-03-21
+## allUsers query â verified 2026-03-21
 ```graphql
 query { allUsers(companyId: "PROPERTY_ID") { _id name } }
 ```
 
-## allCompanies query (alternative to companies) — verified 2026-03-21
+## allCompanies query (alternative to companies) â verified 2026-03-21
 ```graphql
 query { allCompanies(customerId: "CUSTOMER_SLUG") { _id name } }
 ```
 `allCompanies` = string arg (slug). `companies` = array arg. Both return all properties for a customer.
 
-## Getting Sites per Property — Correct Approach (2026-03-21)
+## Getting Sites per Property â Correct Approach (2026-03-21)
 
-- `allSites(companyId: ...)` → ❌ "Unknown argument"
-- `allSites(buildingId: ...)` → ❌ "Unknown argument"
-- `allSites` no args → returns empty []
-- `allSites(input: { companyId: ... })` → documented in skill above, may work per-session
+- `allSites(companyId: ...)` â â "Unknown argument"
+- `allSites(buildingId: ...)` â â "Unknown argument"
+- `allSites` no args â returns empty []
+- `allSites(input: { companyId: ... })` â documented in skill above, may work per-session
 
-**Reliable approach — query sites via building:**
+**Reliable approach â query sites via building:**
 ```graphql
 query { building(buildingId: "BUILDING_ID") { _id name sites { _id name } } }
 ```
-Flow: `allBuildings(companyId)` → get buildingIds → `building(buildingId) { sites {} }` per building.
+Flow: `allBuildings(companyId)` â get buildingIds â `building(buildingId) { sites {} }` per building.
 
-## createWorkOrder — Internal API (verified 2026-03-21)
+## createWorkOrder â Internal API (verified 2026-03-21)
 
 Work orders are created via the internal API at `/graphql`. Navigate to `/issues` first (or be on a property page) to ensure session context is set to the right property.
 
@@ -1075,7 +1075,7 @@ mutation createWorkOrder($input: CreateWorkOrderInput!) {
 }
 ```
 
-**Full input — all discovered fields:**
+**Full input â all discovered fields:**
 ```json
 {
   "input": {
@@ -1095,11 +1095,11 @@ mutation createWorkOrder($input: CreateWorkOrderInput!) {
 ```
 
 **Key notes (2026-03-21):**
-- `buildingId` is REQUIRED — omitting it causes DataLoader error ("The loader.load() function must be called with a value, but got: undefined")
+- `buildingId` is REQUIRED â omitting it causes DataLoader error ("The loader.load() function must be called with a value, but got: undefined")
 - `description` is the only other required field (`String!`)
-- `companyId`/`propertyId`/`locationId` are NOT valid fields — use `buildingId` instead
+- `companyId`/`propertyId`/`locationId` are NOT valid fields â use `buildingId` instead
 - The work order is automatically scoped to the property that owns the building
-- Navigate to the property's work orders page first, then fire mutations — session context matters
+- Navigate to the property's work orders page first, then fire mutations â session context matters
 - The `/issues/issue/create` URL opens the create dialog directly
 
 **Batch creation script pattern:**
@@ -1111,7 +1111,7 @@ const CREATE_WO = `mutation createWorkOrder($input: CreateWorkOrderInput!) {
 // Then fire one mutation per work order with 400ms delay
 ```
 
-## createAutomation — eventFields format correction (2026-03-21)
+## createAutomation â eventFields format correction (2026-03-21)
 
 The `eventFields` format documented above (`{ companyId, categoryIds }`) is WRONG for the current API. The correct format discovered from Apollo cache inspection:
 
@@ -1128,13 +1128,13 @@ The `eventFields` format documented above (`{ companyId, categoryIds }`) is WRON
 ```
 
 **Confirmed action values:**
-- `setDefaultDueDate` → `actionValue: JSON.stringify({ number: 3, unit: 'days' })` e.g. `'{"number":3,"unit":"days"}'`
-- `setPriority` → `actionValue: JSON.stringify('"10"')` = `'"10"'` (Low), `'"20"'` = Medium, `'"30"'` = High, `'"40"'` = Critical
-- `setAssignedUsers` → `actionValue` = JSON array of user IDs
+- `setDefaultDueDate` â `actionValue: JSON.stringify({ number: 3, unit: 'days' })` e.g. `'{"number":3,"unit":"days"}'`
+- `setPriority` â `actionValue: JSON.stringify('"10"')` = `'"10"'` (Low), `'"20"'` = Medium, `'"30"'` = High, `'"40"'` = Critical
+- `setAssignedUsers` â `actionValue` = JSON array of user IDs
 
-**Error: "Similar automation exists"** — The API rejects duplicate automation types per property. Check existing automations before creating.
+**Error: "Similar automation exists"** â The API rejects duplicate automation types per property. Check existing automations before creating.
 
-**Fetch intercept gotcha (2026-03-21):** Apollo caches its fetch reference at module load. Replacing `window.fetch` after load misses Apollo mutations MOST of the time. However, on the `/issues` page, `createWorkOrder` WAS caught by a post-load `window.fetch` override — possibly because the work order mutation uses a different Apollo link or is batched differently. For `createAutomation`, the override did NOT work. To safely intercept mutations: use `window.__APOLLO_CLIENT__` for cache inspection, and probe input types iteratively with `variables: { input: {} }` error messages.
+**Fetch intercept gotcha (2026-03-21):** Apollo caches its fetch reference at module load. Replacing `window.fetch` after load misses Apollo mutations MOST of the time. However, on the `/issues` page, `createWorkOrder` WAS caught by a post-load `window.fetch` override â possibly because the work order mutation uses a different Apollo link or is batched differently. For `createAutomation`, the override did NOT work. To safely intercept mutations: use `window.__APOLLO_CLIENT__` for cache inspection, and probe input types iteratively with `variables: { input: {} }` error messages.
 
 ---
 
@@ -1146,7 +1146,7 @@ mutation deleteDocuments($documentIds: [String!]) {
   deleteDocuments(documentIds: $documentIds)
 }
 ```
-Variables: `{ documentIds: ["<id>", ...] }` — accepts array, bulk delete supported.
+Variables: `{ documentIds: ["<id>", ...] }` â accepts array, bulk delete supported.
 
 ### createDocumentTag
 ```graphql
@@ -1164,7 +1164,7 @@ mutation deleteDocumentTag($documentTagId: String!) {
   deleteDocumentTag(documentTagId: $documentTagId)
 }
 ```
-Variables: `{ documentTagId: "..." }` — **NOT** `tagId` or `id`, must be `documentTagId`.
+Variables: `{ documentTagId: "..." }` â **NOT** `tagId` or `id`, must be `documentTagId`.
 
 ---
 
@@ -1202,7 +1202,7 @@ Variables:
 ```
 Notes:
 - `bookingRange` uses ISO timestamps (UTC)
-- Slot selection is a RANGE — click start slot then end slot in UI (range selector, not single)
+- Slot selection is a RANGE â click start slot then end slot in UI (range selector, not single)
 - `customFields` = empty array if amenity has no booking questions
 - `type` is always `"tenant_booking"` from the UI
 
@@ -1230,7 +1230,7 @@ Variables:
 }
 ```
 Status values: `"canceled"`, `"approved"`, `"rejected"`
-- Cancel: requires confirmation dialog with reason → `comment` field
+- Cancel: requires confirmation dialog with reason â `comment` field
 - `amenityBookingId` = the `_id` on the `amenityBooking` object (NOT the issue `_id`)
 
 ---
@@ -1248,32 +1248,32 @@ mutation deactivateVisitor($visitorId: String!) {
 }
 ```
 Variables: `{ visitorId: "<String!>" }`
-- Triggered from "Cancel permission" → confirmation dialog → Confirm
+- Triggered from "Cancel permission" â confirmation dialog â Confirm
 - Sets visitor status to Expired with today as end date
 
 ### deleteVisitor
 Exists on server (confirmed via "Invalid query" probe = whitelisted).
-UI trigger not found in the visitor list or detail panel — may be an admin-only action or in a different UI route.
+UI trigger not found in the visitor list or detail panel â may be an admin-only action or in a different UI route.
 Inferred shape (same pattern as deactivateVisitor):
 ```graphql
 mutation deleteVisitor($visitorId: String!) {
   deleteVisitor(visitorId: $visitorId)
 }
 ```
-Variables: `{ visitorId: "<String!>" }` — **not confirmed from real UI intercept**
+Variables: `{ visitorId: "<String!>" }` â **not confirmed from real UI intercept**
 
 ---
 
-## Leasable Spaces — Full Concept Guide (verified 2026-03-21)
+## Leasable Spaces â Full Concept Guide (verified 2026-03-21)
 
 ### What is a Leasable Space?
 
 A **leasable space** is a space with `modelType: "leasable_site"`. It represents a Suite (commercial) or Residential Unit that a tenant can occupy exclusively.
 
 **Space types:**
-- `modelType: "leasable_site"` → Leasable space — can be leased or left vacant
-- `modelType: "site"` → Regular space — common areas, technical rooms, etc.
-- `modelType: "equipment"` → Equipment item
+- `modelType: "leasable_site"` â Leasable space â can be leased or left vacant
+- `modelType: "site"` â Regular space â common areas, technical rooms, etc.
+- `modelType: "equipment"` â Equipment item
 
 **Leasable space statuses (from UI perspective):**
 - **Leased** = a leasable space currently assigned to a tenant with `isLeased: true`
@@ -1287,12 +1287,12 @@ A **leasable space** is a space with `modelType: "leasable_site"`. It represents
 ### Connecting Tenants to Leasable Spaces
 
 Use `setTenant` mutation with `locations` array:
-- `isLeased: true` → Leased space (exclusive occupancy, primary space for tenant)
-- `isLeased: false` → Authorized space (WO creation rights, not exclusive)
+- `isLeased: true` â Leased space (exclusive occupancy, primary space for tenant)
+- `isLeased: false` â Authorized space (WO creation rights, not exclusive)
 
-**IMPORTANT**: `setTenant` replaces the ENTIRE tenant — always include ALL existing locations + contacts.
+**IMPORTANT**: `setTenant` replaces the ENTIRE tenant â always include ALL existing locations + contacts.
 
-### tenants (plural) query — locations field uses NESTED objects (2026-03-21)
+### tenants (plural) query â locations field uses NESTED objects (2026-03-21)
 The `tenants` plural query returns locations with nested objects (NOT flat fields):
 ```graphql
 query tenants($input: TenantSearchInput!) {
@@ -1312,18 +1312,18 @@ query tenants($input: TenantSearchInput!) {
 **NOTE**: This is DIFFERENT from the `tenant` (singular) query which uses flat `{ buildingId siteId isLeased }`.
 If you query locations in the plural `tenants` query using flat fields, you get `GRAPHQL_VALIDATION_FAILED`.
 
-### buildings query — correct syntax (2026-03-21)
+### buildings query â correct syntax (2026-03-21)
 The `buildings` query (NOT `allBuildings`) requires `limit` and `skip`:
 ```graphql
 query { buildings(companyId: "PROPERTY_ID", limit: 10, skip: 0) { buildings { _id name } } }
 ```
 - Returns `PaginatedBuildings { buildings[] }`
-- `limit` and `skip` are REQUIRED — omitting either causes validation error
-- The old `allBuildings` pattern in docs above may be outdated — use `buildings` with pagination args
+- `limit` and `skip` are REQUIRED â omitting either causes validation error
+- The old `allBuildings` pattern in docs above may be outdated â use `buildings` with pagination args
 
-### allSites for leasable spaces — use building(buildingId) NOT allSites (2026-03-22)
+### allSites for leasable spaces â use building(buildingId) NOT allSites (2026-03-22)
 
-> ⚠️ **CORRECTION**: `allSites(input: { buildingId })` causes `GRAPHQL_VALIDATION_FAILED`. `buildingId` is NOT a valid field in `SitesSearchInput`. Use the `building(buildingId)` query instead:
+> â ï¸ **CORRECTION**: `allSites(input: { buildingId })` causes `GRAPHQL_VALIDATION_FAILED`. `buildingId` is NOT a valid field in `SitesSearchInput`. Use the `building(buildingId)` query instead:
 
 ```javascript
 // CORRECT way to get leasable spaces for a building
@@ -1348,7 +1348,7 @@ const leasable = Object.entries(cache)
 
 ## Amenity API (discovered 2026-03-22)
 
-### amenity — get single amenity
+### amenity â get single amenity
 ```graphql
 query {
   amenity(amenityId: "AMENITY_ID") {
@@ -1372,7 +1372,7 @@ query {
 }
 ```
 
-### amenities — get all amenities for a property
+### amenities â get all amenities for a property
 ```graphql
 query {
   amenities(companyId: "COMPANY_ID") {
@@ -1388,7 +1388,7 @@ query {
 }
 ```
 
-### setAmenity — create or update amenity
+### setAmenity â create or update amenity
 Pass `_id` to update an existing amenity; omit `_id` to create new.
 ```graphql
 mutation setAmenity($input: AmenityInput!) {
@@ -1425,7 +1425,7 @@ mutation setAmenity($input: AmenityInput!) {
 
 > **CRITICAL**: If you create an amenity with only one day (e.g., Friday=5), it will NOT appear in Visitt+ `/book-amenity` on any other day. Add all required days to the schedule.
 
-### Amenity bookings — query
+### Amenity bookings â query
 Amenity bookings are stored as issues with `type: "amenity_booking"`:
 ```graphql
 query {
@@ -1443,7 +1443,7 @@ query {
 
 ## Billable Items API (discovered 2026-03-25)
 
-### upsertBillableItem — create or update
+### upsertBillableItem â create or update
 
 ```graphql
 mutation upsertBillableItem($input: BillableItemInput!) {
@@ -1479,7 +1479,7 @@ mutation upsertBillableItem($input: BillableItemInput!) {
 
 > **CRITICAL:** `deleteBillableItem`, `archiveBillableItem`, `removeBillableItem` are all server-whitelisted and return "Invalid query". Use `active: false` instead.
 
-### billableItems — query list
+### billableItems â query list
 
 ```graphql
 query billableItems($filters: BillableItemsFilters!, $skip: Int!, $limit: Int!, $sort: String, $sortDirection: SortDirection) {
