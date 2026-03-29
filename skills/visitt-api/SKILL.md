@@ -1640,6 +1640,70 @@ console.log('Done:', results.filter(r=>r.ok).length + '/' + results.length);
 - 400ms delay between calls, 0 errors
 - Achieved: ~57 vendors across 8 properties (batch run 2026-03-29)
 
+### assignUserAccess — add user to a property (verified 2026-03-29, PRODUCTION)
+
+Assigns an existing user to one or more companies (properties). **ADDITIVE** — does not replace existing assignments. Safe to run even if user already has the property.
+
+```graphql
+mutation assignUserAccess($userId: String!, $companyIds: [String!], $propertyGroupIds: [String!], $customerId: String) {
+  assignUserAccess(userId: $userId, companyIds: $companyIds, propertyGroupIds: $propertyGroupIds, customerId: $customerId) {
+    _id name companies { _id name } __typename
+  }
+}
+```
+**Variables:**
+```json
+{
+  "userId": "USER_MONGO_ID",
+  "companyIds": ["COMPANY_MONGO_ID"],
+  "propertyGroupIds": [],
+  "customerId": null
+}
+```
+- Pass one companyId per call for safety (or an array for bulk).
+- `propertyGroupIds` can be `[]`, `customerId` can be `null`.
+- Equivalent to UI: Property → Users → Add Existing User.
+- Response includes the user's full updated companies list.
+
+### allUsers query — get all users for a customer (verified 2026-03-29)
+
+```graphql
+{ customer(customerId: "CUSTOMER_SLUG") { allUsers(withDisabled: false) { _id name companies { _id name } } } }
+```
+- Use `withDisabled: true` to include inactive/disabled users (e.g. `Elizabeth Mavrogenes (Inactive)`).
+- Total count: `allUsersCount` field on customer object.
+- The `companies` field on each user lists all properties they currently have access to.
+
+### Missing-assignment check pattern (verified 2026-03-29)
+
+To find which (property, user) pairs from a desired list are NOT yet assigned:
+```javascript
+// 1. Fetch all users with companies
+const users = await gql(`{ customer(customerId: "X") { allUsers(withDisabled: false) { _id name companies { _id } } } }`);
+// 2. Build Set per userId
+const userCompanies = {};
+users.forEach(u => { userCompanies[u._id] = new Set(u.companies.map(c => c._id)); });
+// 3. Cross-reference desired pairs
+const missing = desiredPairs.filter(({ userId, companyId }) => !userCompanies[userId]?.has(companyId));
+// 4. Run assignUserAccess only on missing pairs
+```
+This avoids over-assigning and runs only the truly missing ~5% of pairs.
+
+### Apollo cache — extract data without network call (verified 2026-03-29)
+
+When Apollo serves data from cache (no new network request made), access it via:
+```javascript
+const cache = window.__APOLLO_CLIENT__.cache.data.data;
+// All User objects:
+const users = Object.entries(cache).filter(([k]) => k.startsWith('User:')).map(([,v]) => v);
+// Customer's allUsers list (refs):
+const rootQuery = cache['ROOT_QUERY'];
+const customerRef = rootQuery['customer({"customerId":"hiffman_national"})']?.__ref;
+const customerData = cache[customerRef];
+const userRefs = customerData?.['allUsers({"withDisabled":false})'];
+```
+Note: `window.__APOLLO_CLIENT__` is available globally in the Visitt SPA.
+
 ### How to discover the correct mutation (fetch interceptor pattern)
 
 When unsure which mutation a UI action calls:

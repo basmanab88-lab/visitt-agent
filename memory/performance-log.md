@@ -46,3 +46,4 @@ Starting point for future comparison:
 
 | 2026-03-25 | `building_deploy` | Apex Tower (staging) — 1 building, 5 floors, 18 spaces, 10 equipment | 28 | ~15s | 1.9/s | insertBuilding+upsertFloors+insertSite+changeSitesLocation. 0 errors. staging.visitt.io |
 | 2026-03-29 | `vendor_create` | Hiffman National — 8 properties, ~57 vendors total | 57 | ~25s | 2.3/s | setVendor, E.164 phone, delay=400ms. Initial run used wrong mutation (setTenant) — 57 records deleted, re-created with setVendor. Final: 0 errors |
+| 2026-03-29 | `user_access_assign` | Hiffman National — 23 missing user→property assignments | 23 | ~5s | 4.6/s | assignUserAccess, delay=200ms. 0 errors. Found via allUsers+companies cross-ref (505 desired pairs → 23 missing) |

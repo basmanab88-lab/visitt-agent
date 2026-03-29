@@ -251,3 +251,27 @@ Audit trail of session learnings. The real value lives in the updated skill file
 
 
 
+
+---
+
+## 2026-03-29 — Hiffman National: Bulk user-property assignment fix
+
+**Task**: Find and fix all cases where existing Hiffman users were missing from properties they should be assigned to. Source: Google Sheet with 505 desired (property, user) pairs.
+
+**Bottlenecks**:
+1. `users(customerId:...)` query shape returns 0 — wrong pattern. Fix: `customer(customerId) { allUsers(withDisabled: false) { _id name companies { _id } } }`.
+2. Apollo served users from cache — interceptor missed it. Fix: access `window.__APOLLO_CLIENT__.cache.data.data` directly.
+3. `allUsers` returns 181 active, `allUsersCount` = 208 — used `withDisabled: true` for inactive users. Skip assignments for disabled users.
+4. Double-space names in source (`"Veronica  Shalvay"`) don't match DB. Fix: normalize or add alias mappings.
+5. Stale session state (tab closed, window vars lost) — rebuilt all data fresh from API.
+
+**What worked well**:
+- `assignUserAccess` confirmed ADDITIVE — safe to call on already-assigned pairs.
+- Cross-ref pattern (allUsers+companies → Set per userId) found exactly 23 missing out of 505 pairs.
+- 23/23 executed, 0 errors. Verified via re-query.
+
+**Skills updated**:
+- `visitt-api` — assignUserAccess mutation, allUsers query, missing-assignment check pattern, Apollo cache extraction.
+- `performance-log` — user_access_assign: 23 items, ~5s, 4.6/s.
+
+**User feedback**: "תן בראש" after approving the 23-item list. No corrections needed.
