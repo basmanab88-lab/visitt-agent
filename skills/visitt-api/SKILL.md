@@ -1516,3 +1516,140 @@ query billableItems($filters: BillableItemsFilters!, $skip: Int!, $limit: Int!, 
 }
 ```
 
+
+---
+
+## Vendors API (discovered 2026-03-29)
+
+> **MODULE DISTINCTION — CRITICAL:** Visitt has two completely separate modules:
+> - **Tenants module** → `setTenant` / `deleteTenant` mutations → `/tenants` page
+> - **Vendors module** → `setVendor` / `deleteVendor` mutations → `/vendors` page
+>
+> When a property has the **Vendors feature flag ON**, use `setVendor`. Using `setTenant` creates records in the wrong module (Tenants list), and nothing will appear under Vendors.
+
+### setVendor — create or update
+
+```graphql
+mutation setVendor($input: VendorInput!) {
+  setVendor(input: $input) {
+    _id
+    name
+  }
+}
+```
+
+**Variables:**
+```json
+{
+  "input": {
+    "companyId": "PROPERTY_ID",
+    "name": "Vendor Company Name",
+    "contactName": "Contact Person Name",
+    "email": "email@domain.com",
+    "phone": "+14051234567",
+    "profession": "",
+    "notes": "",
+    "coiRequirementsId": ""
+  }
+}
+```
+
+> **CRITICAL — Phone format:** The `phone` field requires **E.164 format** (e.g., `+14051234567`). Passing a raw US number like `(405)318-4086` returns `"Invalid phone: (405)318-4086"`. Always normalize before calling.
+
+**Phone E.164 formatter:**
+```javascript
+const fmtPhone = (p) => {
+  if (!p || p === '—') return '';
+  const digits = p.replace(/\D/g, '');
+  if (!digits) return '';
+  return digits.length === 10 ? `+1${digits}` : `+${digits}`;
+};
+```
+
+**Vendor with no contact:** Pass empty strings for `contactName`, `email`, `phone`. The API accepts this — the vendor will appear in the list without contact info.
+
+**Update existing vendor:** Pass `"_id": "VENDOR_ID"` inside the input object.
+
+### deleteVendor — remove
+
+```graphql
+mutation deleteVendor($id: ID!) {
+  deleteVendor(id: $id)
+}
+```
+
+**Variables:** `{ "id": "VENDOR_ID" }`
+
+### vendors — query list
+
+```graphql
+query vendors($companyId: ID!) {
+  vendors(companyId: $companyId) {
+    _id
+    name
+    contactName
+    email
+    phone
+    profession
+    notes
+  }
+}
+```
+
+**Variables:** `{ "companyId": "PROPERTY_ID" }`
+
+### Bulk creation pattern
+
+```javascript
+const gql = (query, variables) =>
+  fetch('/graphql', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query, variables })
+  }).then(r => r.json());
+
+const fmtPhone = (p) => {
+  if (!p || p === '—') return '';
+  const digits = p.replace(/\D/g, '');
+  if (!digits) return '';
+  return digits.length === 10 ? `+1${digits}` : `+${digits}`;
+};
+
+const setVendor = async (companyId, name, contactName, email, phone) => {
+  const res = await gql(
+    `mutation setVendor($input: VendorInput!) { setVendor(input: $input) { _id name } }`,
+    { input: { companyId, name, contactName: contactName||'', email: email||'',
+               phone: fmtPhone(phone), profession:'', notes:'', coiRequirementsId:'' } }
+  );
+  const id = res?.data?.setVendor?._id;
+  return { ok: !!id, name, err: id ? null : JSON.stringify(res?.errors) };
+};
+
+// Loop with delay
+const delay = ms => new Promise(r => setTimeout(r, ms));
+const results = [];
+for (const v of vendors) {
+  const r = await setVendor(v.companyId, v.name, v.contactName, v.email, v.phone);
+  results.push(r);
+  await delay(400);
+}
+console.log('Done:', results.filter(r=>r.ok).length + '/' + results.length);
+```
+
+- 400ms delay between calls, 0 errors
+- Achieved: ~57 vendors across 8 properties (batch run 2026-03-29)
+
+### How to discover the correct mutation (fetch interceptor pattern)
+
+When unsure which mutation a UI action calls:
+```javascript
+const origFetch = window.fetch;
+window.fetch = async (...args) => {
+  if (args[0]?.includes?.('graphql')) {
+    try { console.log('GQL:', JSON.parse(args[1]?.body)); } catch {}
+  }
+  return origFetch(...args);
+};
+// Now perform the action in the UI — the mutation name appears in the console
+```

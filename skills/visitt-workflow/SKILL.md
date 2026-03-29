@@ -1328,3 +1328,45 @@ The Taxable toggle in billable item forms only appears AFTER a tax rate is confi
 - No delete mutation exists. Use `active: false` to deactivate
 - `react-select` dropdowns need fiber manipulation, not DOM clicks
 - Price field accepts numbers (not strings)
+
+---
+
+## Vendors Module (discovered 2026-03-29)
+
+### Vendors vs Tenants — Critical Distinction
+
+Visitt has **two completely separate modules** for people/companies associated with a property:
+
+| Module | Mutation | Page URL | When to use |
+|--------|----------|----------|-------------|
+| Tenants | `setTenant` / `deleteTenant` | `/tenants` | Tenant companies leasing spaces |
+| Vendors | `setVendor` / `deleteVendor` | `/vendors` | Service vendors (cleaning, maintenance, etc.) |
+
+**Feature flag:** The Vendors module requires the `Vendors` flag to be ON for the property (set in property settings or admin). If the flag is OFF, the `/vendors` page won't exist.
+
+> **GOTCHA:** If you run `setTenant` thinking it creates vendors, the records appear in the **Tenants** list — completely invisible under Vendors. Always use `setVendor` for vendors.
+
+### Vendor URLs
+
+- **Vendors list:** `https://app.visitt.io/properties/{propertyId}/vendors`
+- **Add vendor form:** `https://app.visitt.io/properties/{propertyId}/vendor/create`
+- **Edit vendor:** `https://app.visitt.io/properties/{propertyId}/vendor/{vendorId}/edit`
+
+### Phone Format
+
+The `setVendor` mutation requires E.164 phone format (`+14051234567`). Raw US formats like `(405)318-4086` cause `"Invalid phone"` errors. Always run through `fmtPhone()` — see visitt-api/SKILL.md.
+
+### Verifying Pre-Existing Vendors
+
+To tell if a vendor was created by the agent or pre-existed:
+- Agent-created vendors (via `setVendor` bulk script) have `profession: ""` and `coiRequirementsId: ""`
+- Manually-created or imported vendors often have non-empty `profession` and/or `coiRequirementsId`
+
+Query the `vendors` list and inspect these fields to distinguish.
+
+### Hiffman National Context
+
+- **customerId:** `hiffman_national`
+- **Vendors feature flag:** ON for all Illinois properties, 713 Market Drive, Enid Crossing
+- **2655 Orchard Gateway:** Skip — no vendor data in source doc
+- Vendor data source: Google Doc "Hiffman" → "Basman" tab → Section 2 "Vendor Lists"

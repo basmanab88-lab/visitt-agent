@@ -45,3 +45,4 @@ Starting point for future comparison:
 | 2026-03-21 15:00 | `tenant_space_assign` | Northgate â 3 tenants Ã 2-4 leasable spaces each | 8 | 1.2s | 6.7/s | setTenant with locations[isLeased:true], 400ms delay. 0 errors |
 
 | 2026-03-25 | `building_deploy` | Apex Tower (staging) — 1 building, 5 floors, 18 spaces, 10 equipment | 28 | ~15s | 1.9/s | insertBuilding+upsertFloors+insertSite+changeSitesLocation. 0 errors. staging.visitt.io |
+| 2026-03-29 | `vendor_create` | Hiffman National — 8 properties, ~57 vendors total | 57 | ~25s | 2.3/s | setVendor, E.164 phone, delay=400ms. Initial run used wrong mutation (setTenant) — 57 records deleted, re-created with setVendor. Final: 0 errors |
