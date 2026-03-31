@@ -1817,3 +1817,110 @@ const res = await fetch('/graphql', { method: 'POST', headers: { 'Content-Type':
 });
 // Filter for: sites.find(s => s.name === "Whole Building")
 ```
+
+## updateAssignmentsIsPaused — Bulk Pause/Unpause Inspections (verified 2026-04-01)
+
+Pauses or unpauses (activates) inspections in bulk. Accepts an array of assignment IDs.
+
+### Mutation
+```graphql
+mutation updateAssignmentsIsPaused($assignmentIds: [String!]!, $isPaused: Boolean!) {
+  updateAssignmentsIsPaused(assignmentIds: $assignmentIds, isPaused: $isPaused) {
+    _id
+    isPaused
+  }
+}
+```
+
+### Variables
+```javascript
+{
+  assignmentIds: ["id1", "id2", "id3"],  // array of assignment _id values
+  isPaused: false                         // false = activate, true = pause
+}
+```
+
+### Discovery method
+This mutation is NOT discoverable via introspection (blocked). It was found by:
+1. Navigating to Manage Inspections tab
+2. Clicking a paused inspection to open its side panel
+3. Installing a fetch interceptor (`window.fetch` wrapper that logs mutation calls)
+4. Clicking the "Activate" button → confirming the dialog
+5. Reading `window.__capturedMutations` to capture the exact mutation name and variables
+
+### Usage notes
+- Can handle any number of IDs in a single call (tested with 9)
+- Returns the updated assignments with their new `isPaused` value
+- The UI shows "Activate" button for paused inspections and "Pause" for active ones
+- No separate `resumeAssignment` or `togglePauseAssignment` mutation exists — this is the only one
+
+## deleteAssignments — Delete Inspections (verified 2026-04-01)
+
+### Mutation
+```graphql
+mutation deleteAssignments($assignmentIds: [String!]!) {
+  deleteAssignments(assignmentIds: $assignmentIds)
+}
+```
+
+### Variables
+```javascript
+{
+  assignmentIds: ["id1", "id2"]  // NOTE: parameter name is "assignmentIds", NOT "ids"
+}
+```
+Returns array of deleted IDs. Use `restoreAssignments` (same signature) to undo.
+
+## Extended Template IDs — Hiffman National (verified 2026-04-01)
+
+[supersedes 2026-03-31 partial list]
+
+Full template table including Vacancy, Move In/Out, and other types not in previous list:
+
+| Template Name | Template ID | Notes |
+|---|---|---|
+| *Hiffman - Association/Land | `6971c307efbab709fcd6a56e` | |
+| *Hiffman - Exterior (Industrial) | `6971c307efbab709fcd6a570` | |
+| *Hiffman - Exterior (Office) | `6971c307efbab709fcd6a571` | |
+| *Hiffman - Exterior (Retail) | `6971c307efbab709fcd6a572` | |
+| *Hiffman - Interior (Industrial) | `6971c307efbab709fcd6a573` | |
+| *Hiffman - Interior (Office) | `6971c307efbab709fcd6a56f` | |
+| *Hiffman - Move In/Move Out (Industrial) - UPDATED | `6971c30c7a546d2b7cf4479f` | |
+| *Hiffman - Move In/Move Out (Office) - UPDATED | `6971c30c7a546d2b7cf447a1` | |
+| *Hiffman - Move In/Move Out (Retail) - UPDATED | `6971c30c7a546d2b7cf447a2` | |
+| *Hiffman - Rent Roll Review | `6971c3893ac06b4ffceec582` | |
+| *Hiffman - Vacancy (Industrial) - UPDATED | `6971c3a07a546d2b7cf4483f` | Was "Vacancy Inspection (Industrial)" |
+| *Hiffman - Vacancy (Office) - UPDATED | `6971c3bb3ac06b4ffceec5a5` | Was "Vacancy Inspection" |
+| *Hiffman - Vacancy (Retail) - UPDATED | `6971c3c07a546d2b7cf4485d` | |
+| *Hiffman - Portfolio Info Update | `699def58b3b7cb375a9d4e30` | |
+
+### GOTCHA: Template names ≠ old assignment names
+As of ~March 2026, several templates were renamed with "- UPDATED" suffix. The created assignment inherits the TEMPLATE name, not the old name from the spreadsheet. For example:
+- Sheet says: `*Hiffman - Vacancy Inspection (Industrial)` → Template creates: `*Hiffman - Vacancy (Industrial) - UPDATED`
+- Sheet says: `*Hiffman - Move In/Move Out (Industrial)` → Template creates: `*Hiffman - Move In/Move Out (Industrial) - UPDATED`
+
+When checking if an inspection exists, search by partial match (e.g., `name.includes('Vacancy')`) not exact match against the sheet value.
+
+### templates query (variable-based — correct format)
+The templates query requires variables, NOT inline arguments:
+```graphql
+query templates($input: TemplateSearchInput!, $skip: Int!, $limit: Int!) {
+  templates(input: $input, skip: $skip, limit: $limit) {
+    templates { _id name }
+    totalCount
+  }
+}
+```
+Variables:
+```json
+{
+  "skip": 0,
+  "limit": 40,
+  "input": {
+    "customerId": "hiffman_national",
+    "type": "assignment",
+    "search": ""
+  }
+}
+```
+NOTE: The inline format `templates(input: { customerId: "...", type: assignment }, ...)` also works but the variable-based format is more reliable.

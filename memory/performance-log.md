@@ -64,3 +64,17 @@ Starting point for future comparison:
 | 2026-03-25 | `building_deploy` | Apex Tower (staging) — 1 building, 5 floors, 18 spaces, 10 equipment | 28 | ~15s | 1.9/s | insertBuilding+upsertFloors+insertSite+changeSitesLocation. 0 errors. staging.visitt.io |
 | 2026-03-29 | `vendor_create` | Hiffman National — 8 properties, ~57 vendors total | 57 | ~25s | 2.3/s | setVendor, E.164 phone, delay=400ms. Initial run used wrong mutation (setTenant) — 57 records deleted, re-created with setVendor. Final: 0 errors |
 | 2026-03-29 | `user_access_assign` | Hiffman National — 23 missing user→property assignments | 23 | ~5s | 4.6/s | assignUserAccess, delay=200ms. 0 errors. Found via allUsers+companies cross-ref (505 desired pairs → 23 missing) |
+
+---
+
+## Session Log (2026-04-01) — Hiffman Rows 668-705 Mixed Types
+
+| Date & Time | Task Type | Description | Items | Duration | Rate | Notes |
+|-------------|-----------|-------------|-------|----------|------|-------|
+| 2026-04-01 | `assignment_unpause` | Rent Roll Review — 6 paused → active | 6 | ~2s | 3.0/s | updateAssignmentsIsPaused, single batch call. 0 errors |
+| 2026-04-01 | `assignment_unpause` | Rent Roll Review — 9 more paused → active | 9 | ~2s | 4.5/s | updateAssignmentsIsPaused, single batch call. 0 errors |
+| 2026-04-01 | `template_inspection_deploy` | Vacancy/MoveIn/Exterior — 12 + 2 created from templates | 14 | ~5s | 2.8/s | createAssignmentsFromTemplates, 2 batch calls (12+2). 0 errors |
+| 2026-04-01 | `assignment_status_check` | Rows 668-705 — 38 properties, 3-status check | 38 | ~30s | 1.3/s | Two rounds (20+18). active/paused/missing classification |
+| 2026-04-01 | `mutation_discovery` | Found updateAssignmentsIsPaused via fetch intercept | 1 | ~5min | — | Intercepted Activate button click in Manage Inspections UI |
+
+**Key learning:** `updateAssignmentsIsPaused` is the ONLY mutation for pausing/unpausing inspections. It accepts a batch array, making it very efficient. Discovery took ~5 min via fetch intercept — now documented in visitt-api/SKILL.md for instant reuse.

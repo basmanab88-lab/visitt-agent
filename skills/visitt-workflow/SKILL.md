@@ -1400,3 +1400,32 @@ Query the `vendors` list and inspect these fields to distinguish.
 - *Hiffman - Exterior (Office): rows 576-598, 8 created + 11 active + 3 paused + 1 NO_COMPANY (IL - 900 Oakmont Ln)
 - *Hiffman - Interior (Industrial): rows 603-628, 11 created + 15 active
 - *Hiffman - Interior (Office): not yet started
+
+### Session 2026-04-01 — Rows 668-705 mixed types
+
+**What was done:**
+- 20 Rent Roll Review rows: 5 already active, 15 paused → all 15 unpaused via `updateAssignmentsIsPaused`
+- 14 missing inspections created from templates:
+  - 3x Vacancy (Office) - UPDATED (rows 688-690)
+  - 8x Vacancy (Industrial) - UPDATED (rows 691-697, 701)
+  - 2x Move In/Move Out (Industrial) - UPDATED (rows 698-699)
+  - 1x Exterior (Retail) (row 705)
+- 4 rows already active (700, 702, 703, 704): Exterior (Office), Interior (Office), Exterior (Office) x2
+
+**Key discovery: `updateAssignmentsIsPaused` mutation**
+- Found by intercepting fetch on the "Activate" button in the Manage Inspections side panel
+- Takes `assignmentIds: [String!]!` and `isPaused: Boolean!`
+- Can bulk-activate any number of paused assignments in one call
+- Previously tried `resumeAssignment`, `togglePauseAssignment`, `updateAssignment(isPaused)` — none exist
+
+**Gotcha: Template names changed**
+Templates were renamed with "- UPDATED" suffix. When checking existence, use partial match:
+```javascript
+// WRONG — won't find it:
+assignments.find(a => a.name === '*Hiffman - Vacancy Inspection (Industrial)')
+// RIGHT — works:
+assignments.find(a => a.name.includes('Vacancy') && a.name.includes('Industrial'))
+```
+
+**Gotcha: Google Sheets CSV cross-origin**
+Cannot fetch Google Sheets CSV from the Visitt tab (cross-origin blocked). Must fetch from a Google Sheets tab, parse there, then pass data as hardcoded variables to the Visitt tab's `javascript_tool`.
