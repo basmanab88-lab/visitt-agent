@@ -30,6 +30,23 @@ Starting point for future comparison:
 | `bulk_inspection_deploy` | 20â24 | 10â12s | 2.0/s |
 | `billable_item_create` | 34 items | 14s | 2.4/s |
 | `property_fetch` (parallel) | 12 props | 3s | 4.0 props/s |
+| `template_inspection_deploy` | 129 inspections | ~30s | 4.3/s |
+| `assignment_status_check` | 285 properties | ~8min | 0.6/s |
+
+---
+
+## Session Log (2026-03-31) — Hiffman Bulk Inspection Deployment
+
+| Date & Time | Task Type | Description | Items | Duration | Rate | Notes |
+|-------------|-----------|-------------|-------|----------|------|-------|
+| 2026-03-31 | `template_inspection_deploy` | Hiffman Exterior (Industrial) — batch create from template | 129 | ~30s | 4.3/s | 5 batches of 25+4. Double-check saved 27 duplicates. 3 NO_COMPANY skipped. |
+| 2026-03-31 | `template_inspection_deploy` | Hiffman Exterior (Office) — rows 576-598 | 8 | ~3s | 2.7/s | Single batch. 11 already active, 3 paused, 1 NO_COMPANY. |
+| 2026-03-31 | `template_inspection_deploy` | Hiffman Interior (Industrial) — rows 603-628 | 11 | ~4s | 2.75/s | Single batch. 15 already active. |
+| 2026-03-31 | `assignment_status_check` | Hiffman Ext (Industrial) — full 285 property scan | 285 | ~8min | 0.6/s | 6 batches of ~50. Required customerId param discovery. |
+| 2026-03-31 | `assignment_status_check` | Hiffman Ext (Office) — 23 properties, 3-status | 23 | ~15s | 1.5/s | active/paused/missing check with isPaused field. |
+| 2026-03-31 | `assignment_status_check` | Hiffman Int (Industrial) — 26 properties, 3-status | 26 | ~18s | 1.4/s | active/paused/missing check. |
+
+**Key learning:** `createAssignmentsFromTemplates` is 2x faster than `createAssignment` per item (4.3/s vs 2.0/s) because it accepts a batch array natively. Double-check before creation is essential — saved 27 duplicates in one run.
 
 ---
 

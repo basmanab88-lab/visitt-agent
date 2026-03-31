@@ -1370,3 +1370,33 @@ Query the `vendors` list and inspect these fields to distinguish.
 - **Vendors feature flag:** ON for all Illinois properties, 713 Market Drive, Enid Crossing
 - **2655 Orchard Gateway:** Skip — no vendor data in source doc
 - Vendor data source: Google Doc "Hiffman" → "Basman" tab → Section 2 "Vendor Lists"
+
+### Hiffman Bulk Inspection Deployment Workflow (learned 2026-03-31)
+
+**Data source:** Google Sheet `1hWcOGeUZj5A95-eVBIPknm16NJGDO2FI_vlPxVKiFgk` (gid=2002779002)
+- Columns: A=status, B=building name, C=inspection name, D=ID, E=assignee, F=site, G=notes
+- Sheet row numbers ≠ JSON index — be careful with offsets. Always verify visually with user.
+- The `all_rows.json` cached file may have DIFFERENT row numbering than the live Google Sheet. When user gives row numbers, use the SHEET directly (screenshot or Google Sheets API), not the cached JSON.
+
+**Workflow per inspection type:**
+1. User specifies row range + inspection type from the Google Sheet
+2. Extract building names, assignees from those rows
+3. Query `assignments(input: { companyId, customerId: "hiffman_national" })` for EACH property — check `isPaused` too
+4. Classify: ACTIVE / PAUSED / MISSING / NO_COMPANY
+5. Report to user for verification
+6. On approval → double-check each MISSING one again right before creation (anti-duplicate)
+7. Create via `createAssignmentsFromTemplates` in batches of 25
+8. Spot-check 3-5 random properties after creation
+
+**CRITICAL GOTCHAS:**
+- **NEVER run on all MISSING items from a large range without user specifying exact row numbers.** User gives rows 603-628, you do rows 603-628. Not all 163 MISSING in the inspection type.
+- **Row number mismatch:** The cached `all_rows.json` may be stale or indexed differently. Always cross-reference with the actual Google Sheet screenshot when user provides row numbers.
+- **Double-check before creation is MANDATORY.** In one session, 27/157 were already created between the check and the creation step. The double-check caught them all.
+- **3 statuses, not 2:** User often wants ACTIVE / PAUSED / MISSING, not just exists/missing. Use `isPaused` field.
+
+**Completed inspection deployments (as of 2026-03-31):**
+- *Hiffman - Rent Roll Review: 186/189 done
+- *Hiffman - Exterior (Industrial): 120 pre-existing + 129 created = 249/285. 3 NO_COMPANY (IL - 1850 Norman Dr, IL - 161-171 Gary Ave, IL - 485 Crossroads)
+- *Hiffman - Exterior (Office): rows 576-598, 8 created + 11 active + 3 paused + 1 NO_COMPANY (IL - 900 Oakmont Ln)
+- *Hiffman - Interior (Industrial): rows 603-628, 11 created + 15 active
+- *Hiffman - Interior (Office): not yet started

@@ -1717,3 +1717,103 @@ window.fetch = async (...args) => {
 };
 // Now perform the action in the UI — the mutation name appears in the console
 ```
+
+## createAssignmentsFromTemplates — Batch Inspection Creation (verified 2026-03-31)
+
+Creates inspections from existing templates. This is the preferred method for Hiffman bulk inspection deployment — faster and more reliable than `createAssignment` for template-based work.
+
+### Mutation
+```graphql
+mutation createAssignmentsFromTemplates($input: [CreateAssignmentFromTemplateInput!]!) {
+  createAssignmentsFromTemplates(input: $input) {
+    _id name __typename
+  }
+}
+```
+
+### Input shape (per item)
+```javascript
+{
+  companyId: "company_id",           // from allCompanies
+  templateId: "template_id",         // from templates query
+  siteIds: ["whole_building_site_id"], // from allSites → "Whole Building"
+  assignedUserIds: ["user_id"],      // from allUsers
+  createAsPaused: false,
+  plannedInInterval: 0,              // 0 for quarterly
+  daysInWeek: null
+}
+```
+
+### Template IDs (Hiffman National — constant)
+| Inspection Name | Template ID |
+|---|---|
+| *Hiffman - Rent Roll Review | `6971c3893ac06b4ffceec582` |
+| *Hiffman - Exterior (Industrial) | `6971c307efbab709fcd6a570` |
+| *Hiffman - Exterior (Office) | `6971c307efbab709fcd6a571` |
+| *Hiffman - Interior (Industrial) | `6971c307efbab709fcd6a573` |
+| *Hiffman - Interior (Office) | `6971c307efbab709fcd6a56f` |
+
+### templates query (to discover template IDs)
+```graphql
+query {
+  templates(input: { customerId: "hiffman_national", type: assignment }, limit: 50, skip: 0) {
+    templates { _id name }
+  }
+}
+```
+
+### CRITICAL: assignments query MUST include customerId
+```graphql
+# CORRECT — returns results:
+query {
+  assignments(input: { companyId: "XXX", customerId: "hiffman_national" }, limit: 500, skip: 0) {
+    assignments { _id name isPaused }
+  }
+}
+
+# WRONG — returns 0 results!
+query {
+  assignments(input: { companyId: "XXX" }, limit: 500, skip: 0) {
+    assignments { _id name }
+  }
+}
+```
+The `customerId` parameter is MANDATORY for `assignments` query. Without it, query returns empty array for all properties. This caused false "missing" reports in early sessions.
+
+### isPaused field
+Use `isPaused` (boolean) on Assignment to check if an inspection exists but is inactive/paused. Other field names (`mode`, `status`, `paused`, `active`, `isActive`) do NOT exist on the Assignment type.
+
+### Safe batch creation workflow (anti-duplicate pattern)
+1. Build list of properties that need the inspection (from Google Sheet)
+2. For EACH property, query `assignments(input: { companyId, customerId })` and check if inspection name already exists
+3. Filter out any that already exist — this is the "double-check" step
+4. Only create for verified-missing properties
+5. Run in batches of 25 max
+6. Spot-check 3-5 random properties after creation
+
+This double-check saved 27 duplicates in one session (2026-03-31). Never skip it.
+
+### Performance (2026-03-31)
+- 129 inspections created: 5 batches × 25 + 1 × 4 = ~30 seconds total
+- 8 inspections created: single batch = ~3 seconds
+- 11 inspections created: single batch = ~4 seconds
+
+### Helper queries for bulk operations
+```javascript
+// Company name → ID mapping
+const res = await fetch('/graphql', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ query: `query { allCompanies(customerId: "hiffman_national") { _id name } }` })
+});
+
+// User name → ID mapping
+const res = await fetch('/graphql', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ query: `query { allUsers(customerId: "hiffman_national") { _id name } }` })
+});
+// Note: `firstName`/`lastName` fields do NOT exist on User type. Use `name` only.
+
+// Site (Whole Building) for a company
+const res = await fetch('/graphql', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ query: `query { allSites(input: { companyId: "${cid}" }) { _id name } }` })
+});
+// Filter for: sites.find(s => s.name === "Whole Building")
+```
