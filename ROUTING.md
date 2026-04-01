@@ -30,6 +30,7 @@ the right knowledge for any given task.
 | "add vendors" / "הוסף ספקים" | visitt-api | §setVendor | `setVendor` | E.164 phone format required |
 | "create tenants" / "הוסף דיירים" | visitt-api | §tenant mutations | Various | Can use Partner API or Internal API |
 | "assign user to inspection" / "שייך עובד לביקורת" | visitt-api | §updateAssignment | `updateAssignment` | Must pass all required fields + assignedUserIds |
+| "assign user to all daily inspections" / "שייך עובד לכל המשימות היומיות" | visitt-api | §updateAssignment + §assignments query | `assignments` query → filter by interval:"day" → batch `updateAssignment` | Filter assignments by interval, then loop updateAssignment. Can run in parallel with Promise.all for speed. |
 | "update settings" / "עדכן הגדרות" | visitt-workflow | §settings pages | N/A (UI-based) | Usually requires browser automation |
 | "update categories" / "עדכן קטגוריות" | visitt-workflow | §category management | N/A (UI-based) | Bulk updates benefit from JS automation |
 | "create work orders" / "פתח קריאות" | visitt-api | §work order mutations | `createWorkOrder` | Can use Partner API |

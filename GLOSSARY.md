@@ -52,6 +52,7 @@ Claude reads this file during bootstrap to understand what the user means.
 | User says | Visitt customerId | Notes |
 |---|---|---|
 | Hiffman, Hiffman National | hiffman_national | Large client with many templates |
+| Basman Realty, מרום ים, basman | basman_realty | Property "מרום ים" (companyId: 6457816072764a38b546fc2e). Users: Basman A (677d56cbafaded7847734083) |
 | (add more customers as discovered) | | |
 
 ## Self-Review Rule

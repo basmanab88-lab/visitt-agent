@@ -1908,6 +1908,12 @@ await fetch('/graphql', {
 - You MUST pass all required fields even if you're only changing `assignedUserIds`. Query the assignment first to get current values.
 - `completionPolicy` + `completionEndOfUnit` are not returned by the `assignment` query but ARE required by the mutation. Use `"end_of_unit"` and match the interval.
 - `assignedUserIds` is NOT a valid return field on Assignment type (query fails). Only use it as input.
+- When assigning a user to ALL daily inspections of a property: query `assignments` with customerId → filter by `interval === "day"` → loop `updateAssignment` for each. Can use `Promise.all` for parallel execution (no delay needed for 5-10 items).
+- Apollo cache trick: `window.__APOLLO_CLIENT__.cache.data.data['Company:COMPANY_ID'].customer.__ref` gives the customerId instantly without an API call.
+- The Inspections page URL is `/assignments` (NOT `/inspections` — that returns 404).
+
+### Performance (2026-04-01)
+- 5 daily inspections bulk-assigned to a user: ~2 seconds (sequential with 300ms delay). Could be <1s with Promise.all.
 
 ## deleteAssignments — Delete Inspections (verified 2026-04-01)
 
