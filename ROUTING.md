@@ -29,6 +29,7 @@ the right knowledge for any given task.
 | "create equipment" / "הוסף ציוד" | visitt-api | §createEquipment | `createEquipment` | Needs buildingId + floorId + siteId |
 | "add vendors" / "הוסף ספקים" | visitt-api | §setVendor | `setVendor` | E.164 phone format required |
 | "create tenants" / "הוסף דיירים" | visitt-api | §tenant mutations | Various | Can use Partner API or Internal API |
+| "assign user to inspection" / "שייך עובד לביקורת" | visitt-api | §updateAssignment | `updateAssignment` | Must pass all required fields + assignedUserIds |
 | "update settings" / "עדכן הגדרות" | visitt-workflow | §settings pages | N/A (UI-based) | Usually requires browser automation |
 | "update categories" / "עדכן קטגוריות" | visitt-workflow | §category management | N/A (UI-based) | Bulk updates benefit from JS automation |
 | "create work orders" / "פתח קריאות" | visitt-api | §work order mutations | `createWorkOrder` | Can use Partner API |

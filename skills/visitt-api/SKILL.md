@@ -1854,6 +1854,61 @@ This mutation is NOT discoverable via introspection (blocked). It was found by:
 - The UI shows "Activate" button for paused inspections and "Pause" for active ones
 - No separate `resumeAssignment` or `togglePauseAssignment` mutation exists — this is the only one
 
+## updateAssignment — Edit a Single Inspection (verified 2026-04-01)
+
+### Mutation
+```graphql
+mutation updateAssignment($assignmentId: String!, $input: UpdateAssignmentInput!) {
+  updateAssignment(assignmentId: $assignmentId, input: $input) { _id name }
+}
+```
+
+### Required fields in UpdateAssignmentInput
+| Field | Type | Notes |
+|---|---|---|
+| `name` | `String!` | Inspection name |
+| `interval` | `InspectionInterval!` | e.g. `"month"`, `"week"`, `"day"`, `"hour"`, `"custom"` |
+| `startDate` | `Date!` | ISO 8601 date string |
+| `siteIds` | `[String!]!` | Can be empty array `[]` |
+| `completionPolicy` | required | e.g. `"end_of_unit"` — mutation fails with "Missing inspection completion policy" without it |
+| `completionEndOfUnit` | required | e.g. `"month"`, `"week"`, `"day"` — match the interval |
+
+### Optional fields
+| Field | Type | Notes |
+|---|---|---|
+| `assignedUserIds` | `[String]` | Array of user IDs to assign. Use `allUsers(customerId)` to find IDs. |
+
+### Example: assign a user to an existing inspection
+```javascript
+await fetch('/graphql', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  credentials: 'include',
+  body: JSON.stringify({
+    query: `mutation updateAssignment($assignmentId: String!, $input: UpdateAssignmentInput!) {
+      updateAssignment(assignmentId: $assignmentId, input: $input) { _id name }
+    }`,
+    variables: {
+      assignmentId: "<assignment_id>",
+      input: {
+        name: "<current name>",
+        interval: "<current interval>",
+        startDate: "<current startDate>",
+        siteIds: [],
+        completionPolicy: "end_of_unit",
+        completionEndOfUnit: "<match interval>",
+        assignedUserIds: ["<user_id>"]
+      }
+    }
+  })
+});
+```
+
+### Gotchas
+- You MUST pass all required fields even if you're only changing `assignedUserIds`. Query the assignment first to get current values.
+- `completionPolicy` + `completionEndOfUnit` are not returned by the `assignment` query but ARE required by the mutation. Use `"end_of_unit"` and match the interval.
+- `assignedUserIds` is NOT a valid return field on Assignment type (query fails). Only use it as input.
+
 ## deleteAssignments — Delete Inspections (verified 2026-04-01)
 
 ### Mutation
