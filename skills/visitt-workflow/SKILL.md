@@ -1429,3 +1429,42 @@ assignments.find(a => a.name.includes('Vacancy') && a.name.includes('Industrial'
 
 **Gotcha: Google Sheets CSV cross-origin**
 Cannot fetch Google Sheets CSV from the Visitt tab (cross-origin blocked). Must fetch from a Google Sheets tab, parse there, then pass data as hardcoded variables to the Visitt tab's `javascript_tool`.
+
+---
+
+## URL Map — Direct Navigation (added 2026-04-01)
+
+Use direct URLs instead of clicking through the UI. This is 5-10x faster than navigating via sidebar/search.
+
+### Base URLs
+- **Staging:** `https://staging.visitt.io`
+- **Production:** `https://app.visitt.io`
+
+### URL Patterns
+
+| Destination | URL Pattern | Example |
+|---|---|---|
+| Customer dashboard | `/customers/{customerId}` | `/customers/hiffman_national` |
+| All inspections for customer | `/assignment?customerId={customerId}` | `/assignment?customerId=hiffman_national` |
+| Single inspection | `/assignment/{assignmentId}` | `/assignment/69cb9e5f8052eb3aaf5e96a4` |
+| Templates for customer | `/templates?customerId={customerId}` | `/templates?customerId=hiffman_national` |
+| Buildings list | `/building?companyId={companyId}` | `/building?companyId=hiffman_national` |
+| Single building | `/building/{buildingId}` | `/building/6971c307...` |
+| Company settings | `/company-settings/{companyId}` | `/company-settings/hiffman_national` |
+| Tenants list | `/tenants?companyId={companyId}` | `/tenants?companyId=hiffman_national` |
+| Work orders | `/work-orders?companyId={companyId}` | `/work-orders?companyId=hiffman_national` |
+| Vendors | `/vendors?companyId={companyId}` | `/vendors?companyId=hiffman_national` |
+
+### Navigation rule
+
+ALWAYS prefer direct URL navigation over UI clicking:
+```javascript
+// FAST — direct navigation (1-2 seconds)
+window.location.href = 'https://staging.visitt.io/assignment?customerId=hiffman_national';
+
+// SLOW — UI navigation (10-15 seconds)
+// click sidebar → search → click customer → click inspections tab
+```
+
+### Self-review: discovering new URLs
+When navigating to a page for the first time, note the URL pattern and add it here during self-review. Look at the browser address bar after each navigation to capture the pattern.
