@@ -1568,7 +1568,7 @@ const fmtPhone = (p) => {
 
 **Vendor with no contact:** Pass empty strings for `contactName`, `email`, `phone`. The API accepts this — the vendor will appear in the list without contact info.
 
-**Update existing vendor:** Pass `"_id": "VENDOR_ID"` inside the input object.
+**Update existing vendor:** Pass `"vendorId": "VENDOR_ID"` inside the input object. Do NOT use `_id` — the field is called `vendorId` in VendorInput. Using `_id` returns `"Field '_id' is not defined by type VendorInput"`. (discovered 2026-04-01)
 
 ### deleteVendor — remove
 
@@ -1580,23 +1580,31 @@ mutation deleteVendor($id: ID!) {
 
 **Variables:** `{ "id": "VENDOR_ID" }`
 
-### vendors — query list
+### vendors — query list (updated 2026-04-01)
+
+The `vendors` query now returns `PaginatedVendors` and requires `limit`/`skip`. The `companyId` type is `String!` not `ID!`.
 
 ```graphql
-query vendors($companyId: ID!) {
-  vendors(companyId: $companyId) {
-    _id
-    name
-    contactName
-    email
-    phone
-    profession
-    notes
+query vendors($companyId: String!, $limit: Int!, $skip: Int!, $search: String) {
+  vendors(companyId: $companyId, limit: $limit, skip: $skip, search: $search) {
+    vendors {
+      _id
+      name
+      contactName
+      email
+      phone
+      profession
+      notes
+    }
+    totalCount
+    hasNext
   }
 }
 ```
 
-**Variables:** `{ "companyId": "PROPERTY_ID" }`
+**Variables:** `{ "companyId": "PROPERTY_ID", "limit": 40, "skip": 0 }`
+
+> **CRITICAL — Old query format is BROKEN:** Using `vendors(companyId: ID!)` without `limit`/`skip` returns `"Unknown type 'ID'"` and `"Cannot query field '_id' on type 'PaginatedVendors'"`. Always use the paginated format above.
 
 ### Bulk creation pattern
 
@@ -1639,6 +1647,50 @@ console.log('Done:', results.filter(r=>r.ok).length + '/' + results.length);
 
 - 400ms delay between calls, 0 errors
 - Achieved: ~57 vendors across 8 properties (batch run 2026-03-29)
+
+### Bulk profession update pattern (discovered 2026-04-01)
+
+To update profession for existing vendors across multiple properties, use `vendorId` in the input (NOT `_id`):
+
+```javascript
+const updateVendorProfession = async (companyId, vendor, profession) => {
+  const res = await gql(
+    `mutation setVendor($input: VendorInput!) { setVendor(input: $input) { _id name profession } }`,
+    { input: {
+        vendorId: vendor._id,  // ← MUST be vendorId, not _id
+        companyId,
+        name: vendor.name,
+        contactName: vendor.contactName || '',
+        email: vendor.email || '',
+        phone: vendor.phone || '',
+        profession,
+        notes: vendor.notes || ''
+    }}
+  );
+  return res?.data?.setVendor;
+};
+```
+
+> **Gotcha — name matching:** When vendor names in Visitt differ slightly from the data source (e.g., "Goforth Plumbing and Mechanical, LLC" vs "Goforth Plumbing and Mechanical"), the exact match will fail. After bulk update, always check for vendors with empty profession and fix manually.
+>
+> **Performance:** Promise.all works fine for batch updates within a single property (~7-19 vendors). Achieved: 71 vendors across 9 properties in ~5 seconds total (2026-04-01).
+
+### companies — query list (updated 2026-04-01)
+
+The `companies` query is now paginated and requires `limit`/`skip`:
+
+```graphql
+query companies($limit: Int!, $skip: Int!, $search: String) {
+  companies(limit: $limit, skip: $skip, search: $search) {
+    companies { _id name }
+    totalCount
+  }
+}
+```
+
+**Variables:** `{ "limit": 50, "skip": 0, "search": "property name" }`
+
+> Use `search` to find properties by name. Without it, returns all properties (hundreds).
 
 ### assignUserAccess — add user to a property (verified 2026-03-29, PRODUCTION)
 
