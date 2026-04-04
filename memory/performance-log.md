@@ -78,3 +78,21 @@ Starting point for future comparison:
 | 2026-04-01 | `mutation_discovery` | Found updateAssignmentsIsPaused via fetch intercept | 1 | ~5min | — | Intercepted Activate button click in Manage Inspections UI |
 
 **Key learning:** `updateAssignmentsIsPaused` is the ONLY mutation for pausing/unpausing inspections. It accepts a batch array, making it very efficient. Discovery took ~5 min via fetch intercept — now documented in visitt-api/SKILL.md for instant reuse.
+
+---
+
+## Session Log (2026-04-04) — Career Muse Pipeline Fixes
+
+| Date & Time | Task Type | Description | Items | Duration | Rate | Notes |
+|-------------|-----------|-------------|-------|----------|------|-------|
+| 2026-04-04 | `career_pipeline_fix` | NULL poisoning fix in excludeIds | 1 | ~2min | — | JS .filter(id => id != null) on excludeIds array. NULLs from 13 agent_results with null job_directory_id caused PostgREST to serialize improperly, returning wrong jobs (54% eng roles instead of 81% CSM roles) |
+| 2026-04-04 | `career_pipeline_fix` | CV post-processing filter | 1 | ~5min | — | Added PROTECTED_STRINGS array to block title changes + identity line changes + em-dash output. Model kept ignoring "never change titles" instruction. |
+| 2026-04-04 | `career_pipeline_fix` | RPC description limit 300→2000 | 1 | ~1min | — | match_jobs_by_embedding was truncating job description to 300 chars, now 2000. Gives CV prompt better context. |
+| 2026-04-04 | `career_pipeline_fix` | Google Doc template sync | 6 edits | ~10min | — | Template had "Strategist" not "Lead", missing AI Projects section, missing Visitt Agent bullet, old competencies. Used Google Docs batchUpdate API from browser JS. |
+| 2026-04-04 | `career_pipeline_deploy` | Edge function v15→v17 | 3 deploys | ~5min | — | v15: CV prompt fix. v16: null filter + logging. v17: post-processing filter. |
+
+**Key learnings:**
+- NULL values in JS arrays passed to PostgREST RPC calls cause silent data corruption — always filter nulls before passing to .rpc()
+- LLM instruction-following for "never change X" rules is unreliable — need post-processing filters as safety net
+- Google Doc template must exactly match DB base_resume_text or find-and-replace pairs won't apply to copies
+- Embedding quality is good (81% CSM roles) but all good matches get exhausted after ~50 jobs processed. Need fresh job data scraping.
