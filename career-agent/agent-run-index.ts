@@ -417,6 +417,18 @@ function validateReplacements(raw: any[], cv: string): any[] {
       console.log("Blocked em-dash:", replace.slice(0, 50));
       return false;
     }
+    // Layout guard: replacement must be within 40% of original length
+    // This prevents Google Docs formatting breaks from text overflow or excessive whitespace
+    const lenRatio = replace.length / find.length;
+    if (lenRatio > 1.4 || lenRatio < 0.6) {
+      console.log(`Blocked length mismatch (${find.length} -> ${replace.length}, ratio ${lenRatio.toFixed(2)}):`, find.slice(0, 40));
+      return false;
+    }
+    // Block very short finds (< 15 chars) — too risky for replaceAllText, might match in wrong places
+    if (find.length < 15) {
+      console.log("Blocked too-short find:", find);
+      return false;
+    }
     return true;
   });
 }
@@ -593,7 +605,7 @@ Deno.serve(async (req) => {
           },
         }];
         const data = await aiCallFull(
-          `You tailor CVs for job applications. Given the original CV text and a job description, suggest specific text replacements to make the CV more relevant. Return a JSON array of {find, replace} objects. Each "find" must be an EXACT substring from the original CV. Each "replace" is the improved version. Focus on: professional summary, skill keywords, and experience descriptions. Keep changes minimal but impactful. Max 5 replacements. ${tailorPrompt || ""}`,
+          `You tailor CVs for job applications. First extract the top 3-5 keywords from the job description. Then suggest 4-6 specific text replacements that weave those keywords into the CV. Each "find" must be an EXACT substring (15+ chars) from the original CV. Each "replace" must be SIMILAR LENGTH (within 20% chars) to its "find" — this is critical for layout. Focus on: professional summary, top experience bullets, and skills line. Keep "Product Operations" identity. No em-dashes. No fabrication. ${tailorPrompt || ""}`,
           `Original CV:\n${originalCvText}\n\nJob: ${jobTitle} at ${jobCompany}\nDescription: ${jobDescription}`,
           "resume_tailoring",
           { tools: cvTools, tool_choice: { type: "function", function: { name: "cv_replacements" } }, temperature: 0.3 }
@@ -1067,27 +1079,36 @@ Deno.serve(async (req) => {
         const replacementsPromise = (cvText.length > 100) ? aiCallFull(
           `You tailor CVs for job applications by producing find-and-replace pairs.
 
-ABSOLUTE RULES (NEVER BREAK THESE):
-- NEVER change job titles from experience section (e.g. "Support Operations & Product Delivery Lead" must stay exactly as is)
-- NEVER change the candidate's identity line (the opening "Product Operations leader with 5+ years..." must keep "Product Operations" — you may adjust what follows but NEVER rename them to Engineer/Developer/Analyst/etc.)
-- NEVER use em-dashes or long dashes (the character — or –). Use regular hyphens (-) only.
-- Each "find" must be an EXACT character-for-character substring from the original CV text
-- Each "replace" is the improved version tailored to the target job
-- NEVER fabricate experience, credentials, or companies
-- NEVER add tools/skills the candidate doesn't have
+STEP 1 — ANALYZE THE JOB (do this mentally before generating replacements):
+- Extract the top 5 keywords/phrases from the job description that matter most
+- Identify what this role values: what domain, what skills, what outcomes
+- Note specific tools, methodologies, or metrics mentioned in the JD
 
-WHAT TO CHANGE (aim for 6-10 replacements, WOVEN THROUGHOUT the entire CV):
-1. Professional summary (1-2 replacements) - reframe emphasis for the target role but KEEP "Product Operations" identity. Only adjust the description of what they specialize in.
-2. Recent experience bullet points (2-3 replacements) - reword to emphasize transferable achievements that align with the job description. Use keywords from the job naturally.
-3. AI Projects section bullets (1-2 replacements) - highlight the most relevant project aspects for this specific role
-4. Older experience bullets (1 replacement) - connect past work to the target role's needs
-5. Core competencies line (1 replacement) - reorder skills to front-load the ones most relevant to this job
+STEP 2 — GENERATE REPLACEMENTS using those keywords
+
+ABSOLUTE RULES:
+- NEVER change job titles from experience section (e.g. "Support Operations & Product Delivery Lead" stays exactly as is)
+- NEVER change the candidate's identity — keep "Product Operations" in the summary opening
+- NEVER use em-dashes (— or –). Use regular hyphens (-) only.
+- Each "find" must be an EXACT character-for-character substring from the original CV
+- NEVER fabricate experience, credentials, companies, or tools the candidate doesn't have
+- CRITICAL: Each "replace" must be SIMILAR LENGTH to its "find" (within 20% character count). Do NOT make replacements significantly longer or shorter — this breaks the document layout.
+
+WHAT TO CHANGE (exactly 4-6 replacements):
+1. Professional summary (1 replacement) — rewrite the 1-2 sentence description after "Product Operations leader" to emphasize what THIS specific role cares about. Use 1-2 keywords from the JD. Keep similar length.
+2. Top 2-3 experience bullets (2-3 replacements) — reword to emphasize achievements that directly match THIS job's priorities. Weave in JD keywords naturally. Each replacement must be similar length to original.
+3. Core competencies line (1 replacement) — reorder the skills list to front-load the 3-4 skills most relevant to THIS job.
+
+DIFFERENTIATION RULES:
+- The professional summary MUST mention something specific to this company or role — not generic operations language
+- At least 2 replacements must contain keywords that appear in THIS job description but NOT in the original CV
+- If the JD mentions specific tools (e.g. Salesforce, Jira, SQL), weave them into existing bullet points where the candidate has relevant experience
+- Do NOT use generic filler like "cross-functional collaboration" or "stakeholder management" unless the JD specifically emphasizes it
 
 STYLE:
-- Keep it authentic. This person is an operations leader who builds AI tools, not an engineer.
-- Use action verbs and quantified results
-- Mirror keywords from the job description but keep it natural
-- Subtle and professional, not over-optimized
+- Keep it authentic — operations leader who builds AI tools, not an engineer
+- Action verbs + quantified results
+- Mirror JD keywords naturally, not keyword-stuffed
 - Use regular hyphens (-) not em-dashes`,
           `Target: ${job.title} at ${job.company}\nJob Description: ${(job.description || "").slice(0, 1500)}\n\nOriginal CV:\n${cvText}`,
           "resume_tailoring",
@@ -1113,9 +1134,8 @@ STYLE:
         }
 
         // Log failure reason for debugging (no retry here — too slow)
-        if (validReplacements.length === 0 && repRes) {
-          const status = typeof repRes === "object" && "status" in repRes ? (repRes as Response).status : "unknown";
-          console.log(`No valid replacements for ${job.company}. Response status: ${status}`);
+        if (validReplacements.length === 0 && repData) {
+          console.log(`No valid replacements for ${job.company} despite AI response`);
         }
 
         if (validReplacements.length) {
@@ -1217,7 +1237,7 @@ ${contactsForMessages.map((c) => `- ${c.full_name} (${c.title || "no title"} at 
       for (const result of needsRetry.slice(0, 5)) {
         try {
           const data = await aiCallFull(
-            `Generate 4-6 find-and-replace pairs to tailor a CV. Each "find" MUST be an EXACT substring from the original CV. Keep "Product Operations" identity. No em-dashes. No fabrication.`,
+            `Generate 4-6 find-and-replace pairs to tailor a CV. First identify the top 3 keywords from the job description, then use them in replacements. Each "find" MUST be an EXACT substring (15+ chars) from the original CV. Each "replace" must be SIMILAR LENGTH to its "find" (within 20%). Keep "Product Operations" identity. No em-dashes. No fabrication.`,
             `Target: ${result.job_title_text} at ${result.job_company_text}\nJob: ${(result.job_description_text || "").slice(0, 800)}\n\nCV:\n${cvText}`,
             "resume_tailoring",
             { tools: retryTools, tool_choice: { type: "function", function: { name: "cv_replacements" } }, temperature: 0.2 }
