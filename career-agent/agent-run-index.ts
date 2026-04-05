@@ -417,10 +417,10 @@ function validateReplacements(raw: any[], cv: string): any[] {
       console.log("Blocked em-dash:", replace.slice(0, 50));
       return false;
     }
-    // Layout guard: replacement must be within 40% of original length
+    // Layout guard: replacement must be within 60% of original length
     // This prevents Google Docs formatting breaks from text overflow or excessive whitespace
     const lenRatio = replace.length / find.length;
-    if (lenRatio > 1.4 || lenRatio < 0.6) {
+    if (lenRatio > 1.6 || lenRatio < 0.4) {
       console.log(`Blocked length mismatch (${find.length} -> ${replace.length}, ratio ${lenRatio.toFixed(2)}):`, find.slice(0, 40));
       return false;
     }
