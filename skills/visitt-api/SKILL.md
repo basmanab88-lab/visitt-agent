@@ -124,6 +124,7 @@ mutation insertSpace($input: InsertSiteInput!) {
 - `"floor"` Ã¢ÂÂ floor (but use upsertFloors instead)
 
 **CRITICAL:** `insertSite` does NOT assign spaces to floors. Spaces are created under "Spaces & equipment without floors". You MUST call `changeSitesLocation` after creation to assign them to floors. See below.
+**Note on "Whole Building" space:** Hiffman properties use a top-level space called "Whole Building" (modelType: "site") with no floor assignment. Some properties have it spelled "whole building" (lowercase) — always search case-insensitively: `s.name.toLowerCase() === 'whole building'`. (verified 2026-04-05)
 
 ### changeSitesLocation (assign spaces/equipment to floors)
 Moves one or more sites to a floor (or to another parent site). **Required after `insertSite`** to assign entities to floors.
@@ -1832,6 +1833,24 @@ query {
 ```
 The `customerId` parameter is MANDATORY for `assignments` query. Without it, query returns empty array for all properties. This caused false "missing" reports in early sessions.
 
+### categoryId filter in assignments query (verified 2026-04-05)
+The UI uses `AssignmentsSearchInput` with a `categoryId: [String]` array filter. Use this to fetch only assignments of a specific category — much faster than fetching all and filtering client-side.
+```javascript
+variables: {
+  input: {
+    customerId: "hiffman_national",
+    categoryId: ["CATEGORY_ID"],  // array, not string
+    isDeleted: false
+  },
+  skip: 0,
+  limit: 500
+}
+```
+Get the category ID first by fetching a small page of assignments and reading `assignment.category._id`. With 1,371 Inspection-category assignments across 540 Hiffman properties, this filter reduces fetching from 37,000+ to 1,371 in 3 pages.
+
+### companyId in assignments query is [String] array
+`companyId` accepts `[String]` (array), not a single string. Passing a single string causes a GraphQL validation error. Use: `companyId: ["ID1", "ID2"]` or omit entirely and rely on `customerId` alone.
+
 ### isPaused field
 Use `isPaused` (boolean) on Assignment to check if an inspection exists but is inactive/paused. Other field names (`mode`, `status`, `paused`, `active`, `isActive`) do NOT exist on the Assignment type.
 
@@ -1963,6 +1982,7 @@ await fetch('/graphql', {
 - When assigning a user to ALL daily inspections of a property: query `assignments` with customerId → filter by `interval === "day"` → loop `updateAssignment` for each. Can use `Promise.all` for parallel execution (no delay needed for 5-10 items).
 - Apollo cache trick: `window.__APOLLO_CLIENT__.cache.data.data['Company:COMPANY_ID'].customer.__ref` gives the customerId instantly without an API call.
 - The Inspections page URL is `/assignments` (NOT `/inspections` — that returns 404).
+- **`items` are NOT required in updateAssignment** — omitting them preserves existing tasks. Only pass items if you intend to modify them. (verified 2026-04-05)
 
 ### Performance (2026-04-01)
 - 5 daily inspections bulk-assigned to a user: ~2 seconds (sequential with 300ms delay). Could be <1s with Promise.all.
