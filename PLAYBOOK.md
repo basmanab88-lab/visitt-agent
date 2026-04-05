@@ -114,6 +114,46 @@ visitt-agent/
 
 ---
 
+## Career Muse — דרך עבודה קבועה
+
+### Edge Function (agent-run)
+
+**קוד מקור:** `career-agent/agent-run-index.ts` בריפו הזה
+**Deploy target:** Supabase project `ztqngvwdaxwbnobsgyuw`, function `agent-run`
+
+**תהליך — תמיד אותו דבר:**
+1. אני עורך את `agent-run-v13/index.ts` בסשן
+2. דוחף ל-GitHub: `career-agent/agent-run-index.ts`
+3. עושה deploy דרך Supabase MCP tool (`deploy_edge_function`) — **לא CLI, לא subagent**
+4. מוודא שה-deploy תקין: בודק `version` + markers בקוד (aiCallProvider, llm_config וכו')
+
+**כללי ברזל:**
+- **אף פעם subagent לדפלוי** — הם מחליפים את הקוד ב-stub
+- **אף פעם CLI מה-sandbox** — חסום outbound HTTPS
+- **תמיד MCP deploy_edge_function** — עובד נכון עם הקוד המלא
+- **verify_jwt: false** — תמיד
+
+### AI Model Selection
+
+**טבלה:** `settings` (Supabase)
+**שדות:** `llm_config` (jsonb), `anthropic_api_key` (text), `openai_api_key` (text)
+
+**פורמט llm_config:**
+```json
+{
+  "default": {"model": "qwen-3-235b-a22b-instruct-2507", "provider": "cerebras"},
+  "resume_tailoring": {"model": "claude-sonnet-4-20250514", "provider": "anthropic"},
+  "linkedin_messages": {"model": "gpt-4o", "provider": "openai"}
+}
+```
+
+**Task types:** `ai_agent`, `resume_tailoring`, `recruiter_messages`, `linkedin_messages`, `job_parsing`, `job_classification`
+**Providers:** `cerebras` (default fallback), `anthropic`/`claude`, `openai`/`gpt`
+
+אם אין API key לספק שנבחר — fallback אוטומטי ל-Cerebras.
+
+---
+
 ## מה המערכת לא עושה
 
 - לא מחליטה לבד לשנות קוד בפרודקשן
