@@ -237,9 +237,17 @@ Deno.serve(async (req) => {
     const cvText = settings?.base_resume_text || "";
     if (cvText.length < 100) return ok({ error: "CV text too short", length: cvText.length });
 
-    // Initialize AI config
-    _llmConfig = settings?.llm_config || null;
-    _aiKeys = { cerebras: CEREBRAS_KEY, anthropic: settings?.anthropic_api_key || "", openai: settings?.openai_api_key || "" };
+    // Initialize AI config — ALWAYS use Claude for async CV tailoring (it's more accurate at exact quoting)
+    // Override llm_config to force Claude for resume_tailoring task, regardless of user settings
+    const anthropicKey = settings?.anthropic_api_key || "";
+    if (anthropicKey) {
+      _llmConfig = { resume_tailoring: { model: "claude-haiku-4-5-20251001", provider: "anthropic" } };
+      console.log("Using Claude Haiku for async CV tailoring");
+    } else {
+      _llmConfig = settings?.llm_config || null;
+      console.log("No Anthropic key — falling back to default provider");
+    }
+    _aiKeys = { cerebras: CEREBRAS_KEY, anthropic: anthropicKey, openai: settings?.openai_api_key || "" };
 
     const templateDocUrl = settings?.shared_google_doc_url || "";
     const googleToken = await getGoogleAccessToken(supabase, userId);
