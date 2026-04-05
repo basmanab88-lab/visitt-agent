@@ -1260,7 +1260,22 @@ ${contactsForMessages.map((c) => `- ${c.full_name} (${c.title || "no title"} at 
     const emailSent = await sendSummaryEmail("basmanab88@gmail.com", results, runId);
     console.log("Email sent:", emailSent);
 
-    return ok({ runId, jobCount: results.length, emailSent });
+    // ── 12. Trigger async CV tailoring for results that didn't get CVs ──
+    const needsCvTailoring = results.filter((r: any) => !r.cv_replacements?.length).length;
+    if (needsCvTailoring > 0) {
+      console.log(`Triggering async CV tailoring for ${needsCvTailoring} results`);
+      // Fire-and-forget — don't await, let it run independently
+      fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/cv-tailor-async`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+        },
+        body: JSON.stringify({ userId, runId }),
+      }).catch((e) => console.error("Failed to trigger cv-tailor-async:", e));
+    }
+
+    return ok({ runId, jobCount: results.length, emailSent, cvPending: needsCvTailoring });
   } catch (err: unknown) {
     console.error(err);
     return ok({ error: err instanceof Error ? err.message : String(err) });
