@@ -582,6 +582,13 @@ Deno.serve(async (req) => {
         return ok({ replacements: [], debug: "CV text too short or missing job title" });
       }
 
+      // Load user's CV tailor prompt from settings
+      let userCvPrompt: string | null = null;
+      if (userId) {
+        const { data: s } = await supabase.from("settings").select("prompts").eq("user_id", userId).maybeSingle();
+        userCvPrompt = s?.prompts?.cv_tailor || null;
+      }
+
       try {
         const cvTools = [{
           type: "function",
@@ -604,8 +611,9 @@ Deno.serve(async (req) => {
             },
           },
         }];
+        const systemPrompt = userCvPrompt || `You tailor CVs for job applications. First extract the top 3-5 keywords from the job description. Then suggest 4-6 specific text replacements. Each "find" must be an EXACT substring (15+ chars). Each "replace" must be SIMILAR LENGTH (within 20%). Keep "Product Operations" identity. No em-dashes. No fabrication.`;
         const data = await aiCallFull(
-          `You tailor CVs for job applications. First extract the top 3-5 keywords from the job description. Then suggest 4-6 specific text replacements that weave those keywords into the CV. Each "find" must be an EXACT substring (15+ chars) from the original CV. Each "replace" must be SIMILAR LENGTH (within 20% chars) to its "find" — this is critical for layout. Focus on: professional summary, top experience bullets, and skills line. Keep "Product Operations" identity. No em-dashes. No fabrication. ${tailorPrompt || ""}`,
+          `${systemPrompt}\n\n${tailorPrompt || ""}`,
           `Original CV:\n${originalCvText}\n\nJob: ${jobTitle} at ${jobCompany}\nDescription: ${jobDescription}`,
           "resume_tailoring",
           { tools: cvTools, tool_choice: { type: "function", function: { name: "cv_replacements" } }, temperature: 0.3 }
@@ -981,7 +989,7 @@ Deno.serve(async (req) => {
     // 5. Get user settings (for CV tailoring + email + AI config)
     const { data: settings } = await supabase
       .from("settings")
-      .select("base_resume_text, tailor_prompt, candidate_name, enrich_api_key, shared_google_doc_url, llm_config, anthropic_api_key, openai_api_key")
+      .select("base_resume_text, tailor_prompt, candidate_name, enrich_api_key, shared_google_doc_url, llm_config, anthropic_api_key, openai_api_key, prompts")
       .eq("user_id", userId)
       .maybeSingle();
 
@@ -1039,6 +1047,7 @@ Deno.serve(async (req) => {
       if (hasAnyAiKey) {
         const cvText = settings?.base_resume_text || "";
         const tailorPrompt = settings?.tailor_prompt || "Focus on relevant experience and transferable skills.";
+        const cvTailorSystemPrompt = settings?.prompts?.cv_tailor || null; // User-editable prompt from settings
         const resumeContext = cvText
           ? `\n\nCandidate Resume:\n${cvText.slice(0, 3000)}`
           : `\n\nCandidate: ${settings?.candidate_name || "Job seeker"} — experienced in operations, customer success, and process optimization.`;
@@ -1076,40 +1085,14 @@ Deno.serve(async (req) => {
           },
         }];
 
+        // Use the user-editable prompt from settings, or fall back to a sensible default
+        const DEFAULT_CV_SYSTEM_PROMPT = `You tailor CVs for job applications by producing find-and-replace pairs.
+First extract the top 5 keywords from the job description, then generate 4-6 replacements using those keywords.
+Each "find" must be an EXACT substring (15+ chars) from the original CV. Each "replace" must be SIMILAR LENGTH (within 20%).
+Keep "Product Operations" identity. No em-dashes. No fabrication.`;
+
         const replacementsPromise = (cvText.length > 100) ? aiCallFull(
-          `You tailor CVs for job applications by producing find-and-replace pairs.
-
-STEP 1 — ANALYZE THE JOB (do this mentally before generating replacements):
-- Extract the top 5 keywords/phrases from the job description that matter most
-- Identify what this role values: what domain, what skills, what outcomes
-- Note specific tools, methodologies, or metrics mentioned in the JD
-
-STEP 2 — GENERATE REPLACEMENTS using those keywords
-
-ABSOLUTE RULES:
-- NEVER change job titles from experience section (e.g. "Support Operations & Product Delivery Lead" stays exactly as is)
-- NEVER change the candidate's identity — keep "Product Operations" in the summary opening
-- NEVER use em-dashes (— or –). Use regular hyphens (-) only.
-- Each "find" must be an EXACT character-for-character substring from the original CV
-- NEVER fabricate experience, credentials, companies, or tools the candidate doesn't have
-- CRITICAL: Each "replace" must be SIMILAR LENGTH to its "find" (within 20% character count). Do NOT make replacements significantly longer or shorter — this breaks the document layout.
-
-WHAT TO CHANGE (exactly 4-6 replacements):
-1. Professional summary (1 replacement) — rewrite the 1-2 sentence description after "Product Operations leader" to emphasize what THIS specific role cares about. Use 1-2 keywords from the JD. Keep similar length.
-2. Top 2-3 experience bullets (2-3 replacements) — reword to emphasize achievements that directly match THIS job's priorities. Weave in JD keywords naturally. Each replacement must be similar length to original.
-3. Core competencies line (1 replacement) — reorder the skills list to front-load the 3-4 skills most relevant to THIS job.
-
-DIFFERENTIATION RULES:
-- The professional summary MUST mention something specific to this company or role — not generic operations language
-- At least 2 replacements must contain keywords that appear in THIS job description but NOT in the original CV
-- If the JD mentions specific tools (e.g. Salesforce, Jira, SQL), weave them into existing bullet points where the candidate has relevant experience
-- Do NOT use generic filler like "cross-functional collaboration" or "stakeholder management" unless the JD specifically emphasizes it
-
-STYLE:
-- Keep it authentic — operations leader who builds AI tools, not an engineer
-- Action verbs + quantified results
-- Mirror JD keywords naturally, not keyword-stuffed
-- Use regular hyphens (-) not em-dashes`,
+          cvTailorSystemPrompt || DEFAULT_CV_SYSTEM_PROMPT,
           `Target: ${job.title} at ${job.company}\nJob Description: ${(job.description || "").slice(0, 1500)}\n\nOriginal CV:\n${cvText}`,
           "resume_tailoring",
           { tools: cvReplacementTools, tool_choice: { type: "function", function: { name: "cv_replacements" } }, temperature: 0.3 }
