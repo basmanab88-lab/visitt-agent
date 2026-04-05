@@ -29,14 +29,21 @@ Manager, Lead, Director — not entry level, not pure IC.
 - Pure software engineering roles (developer, devops, QA, data engineer, frontend, backend, fullstack, MLOps)
 - Junior roles
 - Hardware/firmware/embedded roles
+- CV layout MUST match the original template exactly — no text cut off, broken bullets, or cramped spacing
 
 ## Learned Patterns
 - CV tailoring must be DIFFERENTIATED per job — Basman noticed when all CVs looked identical
-- CV layout must not break — Google Docs replaceAllText can destroy formatting if replacements differ too much in length
+- CV layout must not break — Google Docs replaceAllText destroys formatting if replacements differ in length
 - CSM roles are OK in moderation (max 3 per run) but shouldn't dominate the pipeline
 - "Technical Account Manager" and "Solutions Architect" are NOT CSM — they're high-priority roles
+- Basman cares deeply about CV visual quality — a broken layout is a complete deal breaker ("?????????????")
+- `base_resume_text` in DB must EXACTLY match the actual Google Doc template text — mismatch = broken CVs
+- Length guard on replacements must be strict (±15%) to preserve Google Docs layout
 
 ## Explicit Requests
 - CV tailoring prompt must be visible and editable in settings (stored in settings.prompts.cv_tailor)
 - Daily agent run MUST happen autonomously without a Cowork session — "הרן עצמו זה חייב לקרות לבד"
 - Basman wants to understand and control the AI logic, not just see results
+- Add llm_config + prompts.cv_tailor management to Career Muse Settings UI (CONFIRMED "כןןןן", NOT YET BUILT)
+- Main pipeline stays on Cerebras (fast), Claude Haiku only in async cv-tailor-async function
+- Never change core identity — keep "Product Operations" in all CVs
