@@ -142,7 +142,7 @@ function validateReplacements(raw: any[], cv: string): any[] {
     if (find.startsWith("Product Operations leader") && !replace.includes("Product Operations")) { console.log("Blocked identity change"); return false; }
     if (replace.includes("\u2014") || replace.includes("\u2013")) { console.log("Blocked em-dash"); return false; }
     const lenRatio = replace.length / find.length;
-    if (lenRatio > 1.6 || lenRatio < 0.4) { console.log(`Blocked length (${lenRatio.toFixed(2)}):`, find.slice(0, 40)); return false; }
+    if (lenRatio > 1.15 || lenRatio < 0.85) { console.log(`Blocked length (${lenRatio.toFixed(2)}):`, find.slice(0, 40)); return false; }
     if (find.length < 15) { console.log("Blocked short find:", find); return false; }
     return true;
   });
