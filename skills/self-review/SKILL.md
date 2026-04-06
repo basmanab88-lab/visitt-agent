@@ -256,6 +256,100 @@ After updating skills, write a brief entry to `memory/optimization-log.md`:
 Keep log entries short. The real value lives in the updated skills, not the log.
 The log is just an audit trail.
 
+## Step 4: Push to Brain (Auto-Ingestion) — MANDATORY
+
+This step closes the loop between "what I learned today" and "what Career Muse knows about me tomorrow". Every session that produced non-trivial learning MUST push to the brain edge function so CVs, job matching, and outreach stay current.
+
+### When to run this step
+- Automatically at every end-of-session when the user says `תשמור מה שלמדנו` / "save what we learned"
+- Automatically when you (Claude) detect the session is wrapping up AND at least one of the following is true:
+  - A new tool, library, pattern, or skill was used for the first time
+  - An existing skill was used in a new context worth marking (promote `learning` → `proficient`, or `proficient` → `expert`)
+  - A project's current_focus or open_issues materially changed
+  - A decision was made or an insight crystallized that would help future-Claude tailor a CV
+
+### Where to push
+```
+POST https://ztqngvwdaxwbnobsgyuw.supabase.co/functions/v1/brain
+Content-Type: application/json
+```
+The function has `verify_jwt: false` — no auth header needed from the sandbox. It uses SERVICE_ROLE internally.
+
+### Payloads
+
+**New or promoted skill** (one POST per skill):
+```json
+{
+  "mode": "skill",
+  "name": "Edge function JWT bypass for ES256 tokens",
+  "category": "technical",
+  "level": "proficient",
+  "source": "cowork-session-YYYY-MM-DD",
+  "evidence": "Deployed brain v3, agent-run v57, cv-tailor-async v9 with verify_jwt:false workaround"
+}
+```
+
+**Learning log entry** (one POST per discrete learning):
+```json
+{
+  "mode": "log",
+  "project": "career-muse",
+  "learned": "Short sentence — what was discovered or built",
+  "skill_tags": ["supabase-edge-functions", "prompt-engineering"],
+  "decision": "Optional — a decision that was made",
+  "insight": "Optional — the meta-insight worth remembering"
+}
+```
+
+**Project update** (when current_focus or open_issues changed):
+```json
+{
+  "mode": "project",
+  "name": "career-muse",
+  "current_focus": "...",
+  "open_issues": ["..."],
+  "key_decisions": ["..."]
+}
+```
+
+**Profile update** (ONLY if identity itself changed — new target role, new major differentiator):
+```json
+{
+  "mode": "profile",
+  "key_differentiators": ["... full new list ..."]
+}
+```
+
+### How to call from the sandbox
+Use Claude-in-Chrome `javascript_tool` on any open Career Muse tab, OR use curl from Bash if network allows. Example:
+```javascript
+fetch("https://ztqngvwdaxwbnobsgyuw.supabase.co/functions/v1/brain", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ mode: "log", project: "career-muse", learned: "..." })
+}).then(r => r.json())
+```
+
+### Verification (do not skip)
+After all POSTs, call `career-context` and confirm the new items appear:
+```javascript
+fetch("https://ztqngvwdaxwbnobsgyuw.supabase.co/functions/v1/brain", {
+  method: "POST", headers: {"Content-Type":"application/json"},
+  body: JSON.stringify({mode:"career-context"})
+}).then(r=>r.json()).then(j => j.context)
+```
+You should see new skills / new learning_log lines in the returned context blob.
+
+### Also update basman-brain repo continuity files
+In the same step, update:
+- `STATE.md` → reflect current focus, new gaps, version bumps
+- `memory/cowork-sessions.md` → prepend a new dated entry (summary, changes, verification, next)
+
+Then `git push` the basman-brain repo. This keeps Cowork bootable from zero next session.
+
+### Why this matters
+`agent-run` and `cv-tailor-async` fetch `career-context` on every run. The daily cron (`0 7 * * *`) triggers `agent-run`. So every auto-ingestion from today silently improves tomorrow morning's CV tailoring and job matching — no extra action required from Basman.
+
 ## Communication Optimization
 
 This section is about optimizing how you interact with the user ÃÂ¢ÃÂÃÂ not just what
