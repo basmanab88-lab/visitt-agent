@@ -16,34 +16,37 @@ the right knowledge for any given task.
 
 ## Routing Table
 
-| Intent Pattern | Skill | Section | Key Mutation/Query | Notes |
-|---|---|---|---|---|
-| "unpause inspections" / "activate paused" / "הפעל ביקורות" | visitt-api | §updateAssignmentsIsPaused | `updateAssignmentsIsPaused` | Batch call, needs assignmentIds array + isPaused: false |
-| "pause inspections" / "השהה ביקורות" | visitt-api | §updateAssignmentsIsPaused | `updateAssignmentsIsPaused` | isPaused: true |
-| "create inspections from template" / "צור ביקורות" | visitt-api | §createAssignmentsFromTemplates | `createAssignmentsFromTemplates` | Needs templateId + companyId + siteIds |
-| "delete inspections" / "מחק ביקורות" | visitt-api | §deleteAssignments | `deleteAssignments` | Param is assignmentIds (NOT ids) |
-| "check inspection status" / "מה מצב הביקורות" | visitt-api + visitt-workflow | §assignments query | `assignments` query | MUST include customerId or returns empty |
-| "list templates" / "הצג תבניות" | visitt-api | §templates query | `templates` query | Requires TemplateSearchInput with customerId |
-| "deploy a building" / "הטמע בניין" | visitt-api + visitt-workflow | §insertBuilding, §upsertFloors, §insertSite | Multiple mutations | MUST visualize first (React JSX tree). dummy_id_N format. |
-| "create spaces" / "צור יחידות" | visitt-api | §insertSite | `insertSite` / `createSite` | modelType: leasable_site for rentable |
-| "create equipment" / "הוסף ציוד" | visitt-api | §createEquipment | `createEquipment` | Needs buildingId + floorId + siteId |
-| "add vendors" / "הוסף ספקים" | visitt-api | §setVendor | `setVendor` | E.164 phone format required |
-| "create tenants" / "הוסף דיירים" | visitt-api | §tenant mutations | Various | Can use Partner API or Internal API |
-| "assign user to inspection" / "שייך עובד לביקורת" | visitt-api | §updateAssignment | `updateAssignment` | Must pass all required fields + assignedUserIds |
-| "assign user to all daily inspections" / "שייך עובד לכל המשימות היומיות" | visitt-api | §updateAssignment + §assignments query | `assignments` query → filter by interval:"day" → batch `updateAssignment` | Filter assignments by interval, then loop updateAssignment. Can run in parallel with Promise.all for speed. |
-| "update settings" / "עדכן הגדרות" | visitt-workflow | §settings pages | N/A (UI-based) | Usually requires browser automation |
-| "update categories" / "עדכן קטגוריות" | visitt-workflow | §category management | N/A (UI-based) | Bulk updates benefit from JS automation |
-| "create work orders" / "פתח קריאות" | visitt-api | §work order mutations | `createWorkOrder` | Can use Partner API |
-| "import data" / "ייבא נתונים" | visitt-import | §CSV import | N/A | For bulk data loads from CSV |
-| "generate report" / "הפק דוח" | visitt-api | §queries | Various queries | May need new skill if complex reporting |
+| Intent Pattern | Load File | Key Mutation/Query | Notes |
+|---|---|---|---|
+| "unpause inspections" / "activate paused" / "הפעל ביקורות" | `visitt-api/sections/inspections.md` | `updateAssignmentsIsPaused` | Batch call, needs assignmentIds array + isPaused: false |
+| "pause inspections" / "השהה ביקורות" | `visitt-api/sections/inspections.md` | `updateAssignmentsIsPaused` | isPaused: true |
+| "create inspections from template" / "צור ביקורות" | `visitt-api/sections/inspections.md` + `visitt-api/sections/hiffman.md` | `createAssignmentsFromTemplates` | Needs templateId + companyId + siteIds |
+| "delete inspections" / "מחק ביקורות" | `visitt-api/sections/inspections.md` | `deleteAssignments` | Param is assignmentIds (NOT ids) |
+| "check inspection status" / "מה מצב הביקורות" | `visitt-api/sections/inspections.md` + `visitt-api/sections/queries.md` | `assignments` query | MUST include customerId or returns empty |
+| "add space to inspection" / "הוסף ספייס לביקורת" | `visitt-api/sections/inspections.md` + `visitt-api/sections/buildings-spaces.md` | `updateAssignment` | items field NOT required — omit to preserve tasks |
+| "list templates" / "הצג תבניות" | `visitt-api/sections/inspections.md` | `templates` query | Requires TemplateSearchInput with customerId |
+| "deploy a building" / "הטמע בניין" | `visitt-api/sections/buildings-spaces.md` + `visitt-workflow` | Multiple mutations | MUST visualize first (React JSX tree). dummy_id_N format. |
+| "create spaces" / "צור יחידות" | `visitt-api/sections/buildings-spaces.md` | `insertSite` | modelType: leasable_site for rentable; use InsertSiteInput |
+| "create equipment" / "הוסף ציוד" | `visitt-api/sections/buildings-spaces.md` | `createEquipment` | Needs buildingId + floorId + siteId |
+| "add vendors" / "הוסף ספקים" | `visitt-api/sections/vendors.md` | `setVendor` | E.164 phone format required; vendors ≠ tenants module |
+| "create tenants" / "הוסף דיירים" | `visitt-api/sections/tenants-contacts.md` | Various | Can use Partner API or Internal API |
+| "assign user to inspection" / "שייך עובד לביקורת" | `visitt-api/sections/inspections.md` | `updateAssignment` | Must pass all required fields + assignedUserIds |
+| "assign user to all daily inspections" / "שייך עובד לכל המשימות היומיות" | `visitt-api/sections/inspections.md` + `visitt-api/sections/queries.md` | `assignments` query → batch `updateAssignment` | Filter by interval:"day", then loop. Use Promise.all for speed. |
+| "update settings" / "עדכן הגדרות" | `visitt-workflow` | N/A (UI-based) | Usually requires browser automation |
+| "update categories" / "עדכן קטגוריות" | `visitt-api/sections/misc.md` + `visitt-workflow` | N/A (UI-based) | Bulk updates benefit from JS automation |
+| "create work orders" / "פתח קריאות" | `visitt-api/sections/misc.md` | `createWorkOrder` | Can use Partner API |
+| "import data" / "ייבא נתונים" | `visitt-import` | N/A | For bulk data loads from CSV |
+| "generate report" / "הפק דוח" | `visitt-api/sections/queries.md` | Various queries | May need new skill if complex reporting |
+| "list buildings / spaces / users" / "הצג בניינים" | `visitt-api/sections/queries.md` | `allBuildings`, `allSites`, `allUsers` | Pagination: skip/limit pattern |
+| "partner API" / "external integration" | `visitt-api/sections/partner-api.md` | Various | Bearer token auth, partner-api.visitt.io |
 
 ## Hiffman-Specific Routes
 
-| Intent Pattern | Skill | Section | Key Info |
-|---|---|---|---|
-| "Hiffman inspections" / "ביקורות הילמן" | visitt-api | §Hiffman Template IDs | customerId: "hiffman_national" |
-| "Hiffman rent roll" | visitt-api | §createAssignmentsFromTemplates | templateId: 6971c3893ac06b4ffceec582 |
-| "Hiffman vacancy" | visitt-api | §createAssignmentsFromTemplates | Industrial/Office/Retail templates — see template table |
+| Intent Pattern | Load File | Key Info |
+|---|---|---|
+| "Hiffman inspections" / "ביקורות הילמן" | `visitt-api/sections/hiffman.md` + `visitt-api/sections/inspections.md` | customerId: "hiffman_national" |
+| "Hiffman rent roll" | `visitt-api/sections/hiffman.md` + `visitt-api/sections/inspections.md` | templateId: 6971c3893ac06b4ffceec582 |
+| "Hiffman vacancy" | `visitt-api/sections/hiffman.md` + `visitt-api/sections/inspections.md` | Industrial/Office/Retail templates — see template table in hiffman.md |
 
 ## Template ID Reference (Hiffman, verified 2026-04-01)
 

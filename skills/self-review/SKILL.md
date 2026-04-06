@@ -29,11 +29,17 @@ rm -rf visitt-agent-live
 git clone https://$TOKEN@github.com/basmanab88-lab/visitt-agent visitt-agent-live 2>&1 | tail -1
 ```
 
-Then read these files immediately after cloning ÃÂ¢ÃÂÃÂ in this order:
-1. `visitt-agent-live/skills/self-review/SKILL.md` (this file) ÃÂ¢ÃÂÃÂ session rules + write protocol
-2. `visitt-agent-live/skills/visitt-api/SKILL.md` ÃÂ¢ÃÂÃÂ all mutations and queries
-3. `visitt-agent-live/skills/visitt-workflow/SKILL.md` ÃÂ¢ÃÂÃÂ UI patterns and gotchas
-4. `visitt-agent-live/memory/performance-log.md` ÃÂ¢ÃÂÃÂ benchmarks
+Then read these files immediately after cloning — in this order:
+1. `visitt-agent-live/skills/self-review/SKILL.md` (this file) — session rules + write protocol
+2. `visitt-agent-live/ROUTING.md` — maps user intent to specific section files
+3. `visitt-agent-live/skills/visitt-api/INDEX.md` — section map + critical gotchas (~40 lines, fast)
+4. Load specific section files from `visitt-api/sections/` based on ROUTING.md + task at hand
+5. `visitt-agent-live/skills/visitt-workflow/SKILL.md` — UI patterns (load only when task is UI-based)
+6. `visitt-agent-live/memory/performance-log.md` — benchmarks
+
+> **DO NOT** load `visitt-api/SKILL.md` (76KB, ~18K tokens) at session start.
+> Load only the section files matching the current task (each is 400-1700 lines max).
+> The full SKILL.md is authoritative — check it only if a section file seems incomplete.
 
 The repo is the single source of truth. The locally installed plugin is outdated ÃÂ¢ÃÂÃÂ ignore it.
 
@@ -181,15 +187,25 @@ If you're unsure whether something belongs in system-learning vs a system-specif
 
 ### Where to write each type of lesson:
 
-| Lesson type | Target skill | Where in the skill |
-|---|---|---|
-| **Cross-system technique (API, automation, browser)** | **`system-learning`** | **"System-Specific Discoveries" or general patterns** |
-| UI technique (click pattern, navigation shortcut) | `visitt-workflow` | "Learned Techniques" section |
-| "Use API instead of UI for X" | `visitt-api` | Add a note in the relevant query/mutation section |
-| "Use CSV import for bulk X" | `visitt-import` | Add to the relevant entity template |
-| Safety-related (don't skip confirmation) | `visitt-guardrails` | Add to rules |
-| How to ask the user better questions | `self-review` (this file) | "Communication Optimization" section below |
-| General efficiency (screenshots, find tool usage) | `self-review` (this file) | "General Rules" section below |
+Visitt API skill is now split into sections. Match the lesson to the right file.
+
+| Lesson type | Write to this file |
+|---|---|
+| **Cross-system technique (API, automation, browser)** | **`system-learning/SKILL.md`** — "System-Specific Discoveries" section |
+| Inspection / assignment mutation gotcha | `visitt-api/sections/inspections.md` — bottom of relevant mutation |
+| Building / floor / space mutation gotcha | `visitt-api/sections/buildings-spaces.md` — bottom of relevant mutation |
+| Tenant / contact mutation gotcha | `visitt-api/sections/tenants-contacts.md` |
+| Vendor mutation gotcha | `visitt-api/sections/vendors.md` |
+| Query pattern or pagination gotcha | `visitt-api/sections/queries.md` |
+| Work order / category / billing gotcha | `visitt-api/sections/misc.md` |
+| Client-specific IDs or templates (Hiffman) | `visitt-api/sections/hiffman.md` |
+| General API gotcha applying to all sections | `visitt-api/INDEX.md` — "Critical Gotchas" block |
+| UI technique (click pattern, navigation shortcut) | `visitt-workflow/SKILL.md` — "Learned Techniques" section |
+| "Use API instead of UI for X" | `visitt-api/sections/[relevant-section].md` — note in that mutation's section |
+| Safety-related (don't skip confirmation) | `visitt-guardrails/SKILL.md` |
+| How to ask the user better questions | `self-review/SKILL.md` — "Communication Optimization" section |
+| General efficiency rules | `self-review/SKILL.md` — "General Rules" section |
+| New routing pattern discovered | `ROUTING.md` — add row to routing table |
 
 ### How to edit a skill safely:
 
