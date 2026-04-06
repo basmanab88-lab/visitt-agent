@@ -227,3 +227,14 @@ The preview MUST include:
 - "+ Add floor" button at bottom
 Only proceed with deploy AFTER explicit user approval ("תטמיע" / "deploy" / "yes").
 This is a NON-NEGOTIABLE rule identical to the "Visualize before deploy" rule in core rules.
+
+## Standard Visual Preview Template (added 2026-04-06)
+The mandatory interactive preview before every building deploy is stored as a LOCKED template:
+`skills/visitt-workflow/templates/building-preview.jsx`
+
+Usage per session:
+1. Read the template file
+2. Copy it to /mnt/outputs/building-preview.jsx
+3. Populate the INIT block with session data (customerName, propertyName, env, buildingName, floors)
+4. Present it to the user and wait for approval
+5. Do NOT push session-specific INIT data back to GitHub — only the template structure is shared
