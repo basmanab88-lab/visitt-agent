@@ -182,3 +182,48 @@ Use `javascript_tool` to execute fetch calls from the same origin:
 
 The browser already has the session cookies, so no auth header needed.
 
+
+## Corrections & Gotchas (verified 2026-04-06)
+
+### changeSitesLocation — CORRECT return signature (supersedes 2026-03-17)
+The mutation MUST include return fields or the server returns "Invalid query" (GRAPHQL_VALIDATION_FAILED).
+The working signature captured from the UI:
+```graphql
+mutation changeSitesLocation($buildingId: String!, $parentSiteId: String!, $siteIds: [String!]!) {
+  changeSitesLocation(buildingId: $buildingId, parentSiteId: $parentSiteId, siteIds: $siteIds) {
+    _id
+    building { _id __typename }
+    __typename
+  }
+}
+```
+**Root cause of failure:** Previous docs showed the mutation body without return fields — server rejects this.
+
+### insertSite — companyId is NOT a valid field
+`InsertSiteInput` does NOT have a `companyId` field. Passing it causes:
+`"Field companyId is not defined by type InsertSiteInput"` — silent failure (returns empty id).
+Correct minimal input:
+```json
+{ "modelType": "site", "name": "room 1", "buildingId": "...", "type": "" }
+```
+
+### Building direct URL pattern (verified 2026-04-06)
+Direct navigation to a building: `/building/{buildingId}#overview` (singular, not `/buildings/`)
+
+### Fetch interceptor resets on SPA navigation
+Installing `window.fetch` interceptor before navigating to a new URL loses the interceptor.
+Always re-install the interceptor AFTER navigating to the target page.
+
+## Mandatory Visual Preview Before Every Building Deploy (rule verified 2026-04-06)
+Before deploying any building to Visitt, ALWAYS show a React JSX interactive tree preview.
+The preview MUST include:
+- Customer name, property name, environment (Staging/Production) in a left sidebar
+- Interactive floor tree (click to expand, shows rooms and equipment nested)
+- Entity counts (floors, rooms, equipment, total)
+- "Pending approval" badge
+- Double-click on any name → inline edit
+- 🗑 icon on hover → delete entity
+- ↩ restore for deleted items
+- "+ Add floor" button at bottom
+Only proceed with deploy AFTER explicit user approval ("תטמיע" / "deploy" / "yes").
+This is a NON-NEGOTIABLE rule identical to the "Visualize before deploy" rule in core rules.

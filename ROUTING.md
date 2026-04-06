@@ -74,3 +74,12 @@ If the user's request doesn't match any row above:
 2. Use the fetch interceptor to discover needed mutations
 3. Execute the task
 4. During self-review, ADD a new row to this table for the discovered pattern
+
+## Building Deploy — Mandatory Visual Preview Rule (added 2026-04-06)
+Every building deploy MUST follow this exact sequence:
+1. Collect info (env, property, building name, floor count, spaces per floor, equipment)
+2. Show React JSX interactive tree preview (editable: rename, delete, restore, add floor)
+3. Wait for explicit approval
+4. Deploy via API
+5. Verify entity counts match
+See `visitt-api/sections/buildings-spaces.md` → "Mandatory Visual Preview" section for full spec.
