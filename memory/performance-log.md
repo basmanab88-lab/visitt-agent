@@ -130,3 +130,25 @@ Starting point for future comparison:
 - No way to get LinkedIn job descriptions via browser when lazy-loading doesn't trigger
 - Gmail MCP doesn't have a send tool — drafts only, need browser for actual sending
 - WebFetch is blocked for many career-related domains (linkedin.com, autofleet.io, workable.com, rescana.com)
+
+---
+
+## Session Log (2026-04-07) — HandyMan WhatsApp Bot Architecture
+
+| Date & Time | Task Type | Description | Items | Duration | Rate | Notes |
+|-------------|-----------|-------------|-------|----------|------|-------|
+| 2026-04-07 | `architecture_design` | HandyMan bot full architecture design | — | ~1h | — | Multi-system WhatsApp routing, Google Sheets backend, usage tracking |
+| 2026-04-07 | `db_setup` | Supabase tables: users_wa, usage_log, handyman_sessions | 3 tables | ~5min | — | users table already existed → named users_wa |
+| 2026-04-07 | `router_update` | whatsapp/index.ts routing by users_wa.system | 1 file | ~10min | — | t800 → existing handler, handyman → new stub |
+| 2026-04-07 | `handyman_handler` | Classification + session + usage logging | 1 file | ~20min | — | claude-haiku-3-5, 6 types, Hebrew, stubs for Sheets |
+| 2026-04-07 | `google_sheets` | sheets.ts — auto-create spreadsheet + CRUD | 1 file | ~20min | — | Service account auth, 4 tabs, auto-share with basman |
+| 2026-04-07 | `handler_update` | Real Sheets integration replacing stubs | 1 file | ~15min | — | Client lookup, partial match, clarification flow |
+| 2026-04-07 | `test_console` | /handyman-test page + API route | 2 files | ~15min | — | Chat UI, shows classification badge |
+
+**Key learnings:**
+- **Supabase `users` table conflict**: T-800 already had a `users` table — new routing table must be `users_wa`. Always check existing schema before creating tables.
+- **Claude Haiku too weak for informal Hebrew**: Haiku returned UNKNOWN for complex multi-action messages like "נתלי כהן 052-1234567 טיח שילמה 600 עלה לי חומרים 100". Use claude-sonnet-4-5 for Hebrew NLP tasks.
+- **Single classification fails on compound messages**: Real contractor messages contain 2-3 actions. Architecture must return `actions[]` array, not a single type. Classify-then-act pattern collapses on compound input.
+- **Google Service Account > OAuth for bots**: Service accounts never expire and need no user interaction. Always prefer service account for server-to-server Google API access.
+- **Test console before WhatsApp**: Building /handyman-test UI allows full QA of classification + Sheets logic without needing a WhatsApp number. Essential step before handing off to real user.
+- **Users table naming convention**: When building on top of existing Supabase projects, always prefix new tables (users_wa, not users) to avoid conflicts with existing auth/data tables.
