@@ -133,6 +133,38 @@ Starting point for future comparison:
 
 ---
 
+## Session Log (2026-04-09) — קרסו חדרה Full Building Deploy + Cleanup
+
+| Date & Time | Task Type | Description | Items | Duration | Rate | Notes |
+|-------------|-----------|-------------|-------|----------|------|-------|
+| 2026-04-09 | `building_deploy` | קרסו חדרה — 6 floors, 66 sites, 11 equipment (production) | 83 | ~25min total | — | See notes below |
+| 2026-04-09 | `orphan_cleanup` | Delete 10 duplicate sites created by concurrent batch race condition | 10 | ~2min | — | `deleteSites(siteIds: [...])` — single API call |
+
+**What went wrong (race condition):**
+The first `insertSite` batch appeared to hang (no window.__createdSites update). A second batch was started after reset. But the first batch was still running async in JS — both batches ran concurrently and created 76 sites (66 expected + 10 duplicates). Both batches also ran `changeSitesLocation`, so all 76 were assigned to floors.
+
+**Cleanup approach:**
+- Queried `sites(input: { buildingId, companyId, modelType: [site, leasable_site] })` with `parentBranches` field
+- Identified 10 orphans via `parentBranches: []` (first batch created sites but their `changeSitesLocation` ran AFTER the second batch's, so they got de-assigned or never properly assigned)
+- Discovered `deleteSites(siteIds: [...])` mutation via fetch interceptor + trial/error
+- Deleted all 10 in one API call
+
+**Time breakdown:**
+- Excel parsing + preview JSX: ~5 min
+- insertBuilding + upsertFloors + insertSite + changeSitesLocation: ~10 min (incl. duplicate incident)
+- Finding `deleteSites` mutation: ~15 min (biggest time sink — tried 15+ variants, searched obfuscated bundle)
+- Orphan identification + cleanup: ~5 min
+
+**Key learnings:**
+- NEVER start a second batch if the first appears to hang — check `window.__createdSites` state more carefully, add a timeout with console.log
+- `deleteSites(siteIds: [...])` is the batch delete mutation (plural, takes array)
+- `parentBranches: []` = orphan site (not assigned to any floor)
+- JS bundle is obfuscated — don't waste time searching it for mutation names
+- `/building/{id}` direct URL → React crash — use SPA pushState instead
+- Fetch interceptor dies on hard reload — use pushState + popstate to stay on same JS context
+
+---
+
 ## Session Log (2026-04-07) — HandyMan WhatsApp Bot Architecture
 
 | Date & Time | Task Type | Description | Items | Duration | Rate | Notes |

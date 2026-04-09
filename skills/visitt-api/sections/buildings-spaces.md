@@ -183,6 +183,54 @@ Use `javascript_tool` to execute fetch calls from the same origin:
 The browser already has the session cookies, so no auth header needed.
 
 
+## deleteSites — batch delete spaces/equipment (verified 2026-04-09)
+
+Deletes one or more sites by ID. Works for `site`, `leasable_site`, and `equipment` modelTypes.
+
+```graphql
+mutation {
+  deleteSites(siteIds: ["id1", "id2", "id3"])
+}
+```
+Returns: array of deleted IDs → `{ "data": { "deleteSites": ["id1", "id2", "id3"] } }`
+
+**Key notes:**
+- Mutation name is `deleteSites` (plural) — NOT `deleteSite`, `archiveSite`, `removeSite`, `siteRemoveById`
+- Argument is `siteIds` (array) — NOT `id`, `_id`, `siteId`
+- No return selection set needed (returns scalar array)
+- `deleteSite` (singular) exists in schema but always returns "Invalid query" — do not use
+- Send all IDs in a single call — no need to loop
+
+**Identifying orphaned/unassigned sites:**
+Use the `parentBranches` field on the `sites` query. Sites with `parentBranches: []` are not assigned to any floor.
+```graphql
+query {
+  sites(
+    input: {
+      buildingId: "BUILDING_ID"
+      companyId: "PROPERTY_ID"
+      modelType: [site, leasable_site]
+    }
+    skip: 0
+    limit: 200
+    sortBy: "name"
+    sortDirection: ASC
+  ) {
+    sites {
+      _id
+      name
+      modelType
+      parentBranches { _id name modelType }
+    }
+  }
+}
+```
+`parentBranches[0]` = the floor this site lives on. Empty array = orphan (not assigned to any floor).
+
+**IMPORTANT:** `allSites` does NOT accept `buildingId` or `companyId` args. Use the `sites(input: {...})` query instead. The `sites` query also has `buildingId`, `buildingName`, `serialNumber`, `type` fields.
+
+---
+
 ## Corrections & Gotchas (verified 2026-04-06)
 
 ### changeSitesLocation — CORRECT return signature (supersedes 2026-03-17)
@@ -210,9 +258,38 @@ Correct minimal input:
 ### Building direct URL pattern (verified 2026-04-06)
 Direct navigation to a building: `/building/{buildingId}#overview` (singular, not `/buildings/`)
 
-### Fetch interceptor resets on SPA navigation
-Installing `window.fetch` interceptor before navigating to a new URL loses the interceptor.
-Always re-install the interceptor AFTER navigating to the target page.
+### Fetch interceptor — SPA navigation trick (verified 2026-04-09)
+Installing `window.fetch` interceptor and then calling `window.location.reload()` or hard-navigating KILLS the interceptor.
+
+**To keep interceptor alive:** Use React Router SPA navigation:
+```javascript
+window.history.pushState({}, '', '/building/BUILDING_ID');
+window.dispatchEvent(new PopStateEvent('popstate', { state: {} }));
+```
+This triggers React Router re-render without destroying the JS context. The interceptor survives.
+
+**To capture unknown mutations/queries:**
+1. Install interceptor on current page
+2. SPA-navigate to the target section (pushState + popstate)
+3. Interact with the UI
+4. Read `window.__capturedQueries`
+
+### /building/{id} direct URL — React crash (verified 2026-04-09)
+Navigating directly to `https://app.visitt.io/building/{id}` via the browser address bar causes a React error: `Cannot read properties of undefined (reading 'customer')`. The page breaks.
+
+**Workaround:** Use SPA navigation (pushState) from the property page, or run GraphQL queries from the property page (`/property/{id}`) instead.
+
+### JS bundle is obfuscated — don't search it (verified 2026-04-09)
+The file `/assets/index-DhzA78tV.js` (2.2MB) is minified and variable-name-obfuscated. Searching for mutation names like `deleteSite` returns nothing even when the mutation exists. Introspection is also effectively disabled (returns 0 fields). The ONLY reliable way to discover mutations is:
+- **fetch interceptor** (capture live UI requests)
+- **trial and error** on known GraphQL patterns
+
+### Building page queries (verified 2026-04-09)
+The building page uses these operation names (captured via interceptor):
+- `building` — basic building metadata (companyId, customerId)
+- `buildings` — all buildings for a property (use `allBuildings(companyId: "PROPERTY_ID")`)
+- `buildingStructure` — full building info (counts only, no floor/site list)
+- `sitesSearch` — paginated site list with floor assignment data (Spaces tab)
 
 ## Mandatory Visual Preview Before Every Building Deploy (rule verified 2026-04-06)
 Before deploying any building to Visitt, ALWAYS show a React JSX interactive tree preview.
