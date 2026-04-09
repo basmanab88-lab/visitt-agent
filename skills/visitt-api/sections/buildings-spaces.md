@@ -315,3 +315,35 @@ Usage per session:
 3. Populate the INIT block with session data (customerName, propertyName, env, buildingName, floors)
 4. Present it to the user and wait for approval
 5. Do NOT push session-specific INIT data back to GitHub — only the template structure is shared
+
+## insertSite — Create a Space (verified 2026-04-09)
+
+Creates a single space/site inside a building. Captured from the Spaces tab "Create space" button.
+
+```graphql
+mutation insertSpace($input: InsertSiteInput!) {
+  insertSite(input: $input) {
+    _id
+    __typename
+  }
+}
+```
+
+**Variables:**
+```json
+{
+  "input": {
+    "buildingId": "BUILDING_ID",
+    "modelType": "site",
+    "name": "Space Name",
+    "type": ""
+  }
+}
+```
+
+**Notes:**
+- `modelType`: `"site"` for base building space, `"leasable_site"` for tenant space
+- `type`: can be empty string `""` — no space category needed
+- No `parentBranchId` → space is created without floor assignment (useful for "כל הבניין" whole-building sites)
+- To assign to a floor, add `"parentBranchId": "FLOOR_ID"` to the input
+- UI path: Building → Spaces tab → "Create space" button → Base building space / Leasable space

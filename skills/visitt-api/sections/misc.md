@@ -370,3 +370,52 @@ query billableItems($filters: BillableItemsFilters!, $skip: Int!, $limit: Int!, 
 
 
 
+
+## createUser — Create a new user (verified 2026-04-09)
+
+Captured from Settings → Account → Users → "Add new user" form.
+
+```graphql
+mutation createUser($input: UserInput!, $customerId: String!, $withNotification: Boolean) {
+  createUser(
+    input: $input
+    customerId: $customerId
+    withNotification: $withNotification
+  ) {
+    _id
+    name
+    __typename
+  }
+}
+```
+
+**Variables example:**
+```json
+{
+  "input": {
+    "firstName": "שליו",
+    "lastName": "פחימה",
+    "position": "מנהל אחזקה",
+    "email": "user@mekdan.com",
+    "phone": "+972XXXXXXXXX",
+    "userType": "manager",
+    "propertiesAccess": ["PROPERTY_ID"]
+  },
+  "customerId": "mekdan",
+  "withNotification": true
+}
+```
+
+**Notes:**
+- `customerId`: the customer slug (e.g. `"mekdan"`, `"hiffman_national"`) — NOT the property ID
+- UI path: `/settings/account/{customerId}/users` → "Add new user"
+- Field names on User type: `name` (full name), NOT `firstName`/`lastName` — use `allUsers` query
+- `allUsers(customerId: "mekdan")` returns `{ _id, name }` — no email field exposed in this query
+- After creating, user appears with ID immediately — no email confirmation needed to deploy inspections
+
+## allUsers — Query all users for a customer (verified 2026-04-09)
+
+```graphql
+query { allUsers(customerId: "CUSTOMER_ID") { _id name } }
+```
+Note: `firstName`/`lastName`/`email` are NOT valid fields on the User query type. Only `_id` and `name` confirmed.

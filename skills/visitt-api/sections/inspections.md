@@ -59,9 +59,9 @@ mutation createAssignment($input: CreateAssignmentInput!) {
 | Every two weeks | `"2week"` | `[0,1,2,3,4]` | `"week"` |
 | Monthly | `"month"` | `[]` | `"month"` |
 | Every 2 months | `"2month"` | `[]` | `"month"` |
-| Every 3 months | `"3month"` | `[]` | `"month"` |
+| Every 3 months | `"every_3_months"` | `[0,1,2,3,4]` | `"month"` |
 | Every 4 months | `"4month"` | `[]` | `"month"` |
-| Every 6 months | `"6month"` | `[]` | `"month"` |
+| Every 6 months | `"every_6_months"` | `[0,1,2,3,4]` | `"month"` |
 | Annual | `"year"` | `[]` | `"year"` |
 | Custom | `"custom"` | varies | varies |
 

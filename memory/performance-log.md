@@ -184,3 +184,42 @@ The first `insertSite` batch appeared to hang (no window.__createdSites update).
 - **Google Service Account > OAuth for bots**: Service accounts never expire and need no user interaction. Always prefer service account for server-to-server Google API access.
 - **Test console before WhatsApp**: Building /handyman-test UI allows full QA of classification + Sheets logic without needing a WhatsApp number. Essential step before handing off to real user.
 - **Users table naming convention**: When building on top of existing Supabase projects, always prefix new tables (users_wa, not users) to avoid conflicts with existing auth/data tables.
+
+---
+
+## Session: 2026-04-09 (Part 2) — קרסו חדרה Inspections Deploy
+
+**Task:** Deploy 13 inspections from Excel to קרסו חדרה production building
+
+**Results:**
+- ✅ Created user: שליו פחימה (ID: 69d7d49555e8a098f3058cca) via createUser mutation
+- ✅ Created site: "כל הבניין" (ID: 69d7d561c097c1e7274b4d70) — no floor assignment — via insertSite
+- ✅ Deployed all 13 inspections via createAssignment
+- Total time: ~45 min (including user creation, site creation, frequency discovery)
+
+**Key discoveries:**
+- `every_3_months` and `every_6_months` are the correct interval values (NOT "3month"/"6month")
+- These use `daysInWeek: [0,1,2,3,4]` — weekdays only
+- `createUser` mutation uses `customerId` (slug) not property ID
+- `insertSite` with no `parentBranchId` creates whole-building space
+- Settings → Users page: `/settings/account/{customerId}/users`
+- Inspection creation form: `/assignment/create?companyId=...` (accessed via "Add inspection" → "New inspection")
+
+**Inspections deployed (all assigned to שליו פחימה):**
+| # | Name | Frequency | Site(s) | Category |
+|---|------|-----------|---------|----------|
+| 1 | סיור יומי | day | כל הבניין | אחזקה |
+| 2 | סיור יומי חניון | day | כל הבניין | אחזקה |
+| 3 | בדיקת צ'ילרים - יומית | day | כל הבניין | מיזוג |
+| 4 | בדיקת חדרי משאבות | day | חדר משאבות ×2 | כיבוי אש |
+| 5 | בדיקת צ'ילרים - שבועית | week | כל הבניין | מיזוג |
+| 6 | בדיקת משאבות מים | week | חדר משאבות ×2 | אחזקה |
+| 7 | בדיקת ציוד כיבוי אש בקומות | week | כל הבניין | כיבוי אש |
+| 8 | בדיקת גנרטור דיזל | week | גנרטור | אחזקה |
+| 9 | בדיקת תקינות קומות | month | כל הבניין | אחזקה |
+| 10 | בדיקת יט"אות | month | כל הבניין | מיזוג |
+| 11 | בדיקת שירותים | every_3_months | שירותים ×3 | אחזקה |
+| 12 | בדיקת מזגן מפוצל | every_3_months | כל הבניין | מיזוג |
+| 13 | בדיקת עמדות כיבוי אש | every_6_months | עמדות כיבוי אש ×4 | כיבוי אש |
+
+**JSX template saved:** `skills/visitt-workflow/templates/inspections-preview-template.jsx`
