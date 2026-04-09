@@ -415,6 +415,16 @@ These are efficiency rules that apply across all tasks. They accumulate over tim
 
 12. **Confirmation dialogs fire mutations on Confirm, not on action button** ÃÂ¢ÃÂÃÂ Install interceptor before clicking the action button. Clear buffer before step 1. Mutation fires on step 2 (Confirm/Submit in dialog). (2026-03-21)
 
+19. **Mutation discovery: interceptor FIRST, max 2-3 guesses, then stop** — When a mutation name is unknown, DO NOT run through a long list of guesses (deleteSite, archiveSite, removeSite...). Max 2-3 logical guesses. If none work: install fetch interceptor → click the relevant button in the UI → read the captured mutation. This is always faster and avoids triggering security monitoring. (2026-04-09)
+
+20. **Never start a second batch if the first "appears" to hang** — Async JS batches that seem frozen may still be running. Check `window.__createdSites` state carefully. Add a timeout+console.log loop to monitor progress before assuming failure. Starting a second batch while the first is running = race condition = duplicate data. (2026-04-09)
+
+21. **SPA navigation keeps JS context alive; hard reload kills it** — Use `window.history.pushState({}, '', '/new/path') + window.dispatchEvent(new PopStateEvent('popstate'))` to navigate within the app. `window.location.reload()` or hard navigation kills all window variables and interceptors. (2026-04-09)
+
+22. **Visitt JS bundle is obfuscated — don't search it for mutation names** — The 2.2MB bundle at `/assets/index-*.js` has all variable names minified. Searching for `deleteSite`, `insertSite`, etc. returns nothing. Don't waste time here. Go straight to fetch interceptor or trial/error (max 2-3 attempts). (2026-04-09)
+
+23. **Direct `/building/{id}` URL causes React crash** — Navigating directly to `app.visitt.io/building/{id}` throws a React error. Use SPA pushState from property page instead, or run all queries from `/property/{id}` context. (2026-04-09)
+
 (Add new rules here as they're discovered in sessions)
 
 ## What NOT to Optimize Away
