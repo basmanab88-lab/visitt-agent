@@ -415,7 +415,7 @@ These are efficiency rules that apply across all tasks. They accumulate over tim
 
 12. **Confirmation dialogs fire mutations on Confirm, not on action button** ÃÂ¢ÃÂÃÂ Install interceptor before clicking the action button. Clear buffer before step 1. Mutation fires on step 2 (Confirm/Submit in dialog). (2026-03-21)
 
-19. **Mutation discovery: interceptor FIRST, max 2-3 guesses, then stop** — When a mutation name is unknown, DO NOT run through a long list of guesses (deleteSite, archiveSite, removeSite...). Max 2-3 logical guesses. If none work: install fetch interceptor → click the relevant button in the UI → read the captured mutation. This is always faster and avoids triggering security monitoring. (2026-04-09)
+19. **Mutation discovery: ask the user to click, don't guess** — When a mutation name is unknown, max 2-3 logical guesses. If none work: tell the user "תלחץ על X בממשק", install interceptor first, capture the mutation name. 30 seconds vs 15 minutes of blind guessing. The user is available and this is always the fastest path. Never search the bundle, never run long guess lists. (2026-04-09)
 
 20. **Never start a second batch if the first "appears" to hang** — Async JS batches that seem frozen may still be running. Check `window.__createdSites` state carefully. Add a timeout+console.log loop to monitor progress before assuming failure. Starting a second batch while the first is running = race condition = duplicate data. (2026-04-09)
 
