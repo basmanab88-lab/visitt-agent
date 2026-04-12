@@ -95,6 +95,22 @@ Same `insertSite` mutation, but with `modelType: "equipment"` and extended equip
     }
 Frontend operation name for equipment is `insertSite` (same as spaces). Use `changeSitesLocation` if you need to assign to a floor.
 
+**CRITICAL gotcha — argument name (verified 2026-04-12):**
+The GraphQL argument is `input:`, NOT `site:`. Using `site:` causes `GRAPHQL_VALIDATION_FAILED: Unknown argument "site"`. Always use:
+```graphql
+mutation insertSite($input: InsertSiteInput!) {
+  insertSite(input: $input) { _id __typename }
+}
+```
+Variables: `{ "input": { ... } }` — NOT `{ "site": { ... } }`.
+
+**Bulk equipment deployment pattern (verified 2026-04-12, 427 items, 0 errors):**
+- Split large datasets into chunks of ≤50 items, store in `localStorage.__eq_cN`
+- Launch as background async IIFE (avoids 45s CDP timeout on javascript_tool)
+- Use `window.__deployProgress` only as rough indicator — poll `localStorage.__batch_cN_results` for ground truth
+- If re-running after a failed attempt: old IIFE keeps running (flag check not built in), new IIFE overwrites localStorage results per chunk — safe to restart
+- 427 items × (concurrency 5 + 400ms delay) ≈ 7 minutes total, 0 errors
+
 
 ### buildings (get all buildings for a property)
 query buildings($companyId: String) {
