@@ -347,3 +347,61 @@ mutation insertSpace($input: InsertSiteInput!) {
 - No `parentBranchId` → space is created without floor assignment (useful for "כל הבניין" whole-building sites)
 - To assign to a floor, add `"parentBranchId": "FLOOR_ID"` to the input
 - UI path: Building → Spaces tab → "Create space" button → Base building space / Leasable space
+
+---
+
+## Bulk Equipment Deployment Pattern — verified 2026-04-12
+
+Tested on 210 equipment items across 13 spaces, 4 floors. Zero errors.
+
+### Key findings
+
+**equipmentData fields go INSIDE the equipmentData object (not root input):**
+```json
+{
+  "input": {
+    "buildingId": "BUILDING_ID",
+    "modelType": "equipment",
+    "name": "Item Name",
+    "type": "Type Category > Subcategory",
+    "parentSiteId": "SPACE_OR_FLOOR_ID",
+    "serialNumber": "SN123",
+    "notes": "Any notes",
+    "equipmentData": {
+      "model": "Model XYZ",
+      "manufacturer": "Manufacturer Name",
+      "installationDate": "2023-09-01T00:00:00.000Z"
+    }
+  }
+}
+```
+- `installationDate` must be ISO 8601 format — non-date strings (e.g. "Installed by Vertiv") should go in `notes` instead
+- `type` field accepts free-form string — e.g. "PDU (Power Distribution Unit) > Electrical"
+- `parentSiteId` places equipment under a space; still call `changeSitesLocation` to confirm floor assignment
+
+**Location string parsing (from Excel sheets):**
+Format is `Building / Floor / Space` but space names may contain `/` (e.g. "Generator A/B").
+Split on `" / "` (space-slash-space) with max 2 splits, NOT on bare `/`:
+```python
+parts = location.split(' / ', 2)
+building, floor, space = parts[0], parts[1], parts[2] if len(parts) > 2 else None
+```
+Splitting on bare `/` silently breaks "Generator A/B" into 4 parts.
+
+**Large dataset injection via localStorage chunking:**
+When equipment data exceeds ~10KB for a single `javascript_tool` call, split into chunks of ~50 items:
+1. Save each chunk to `localStorage.setItem('__eq_cN', JSON.stringify(chunk))`
+2. Run deployment function reading from `localStorage.getItem('__eq_cN')`
+3. Store results in `localStorage.setItem('__batch_cN_results', JSON.stringify(results))`
+4. After all batches, collect all result IDs and run `changeSitesLocation` per parent space
+
+**allBuildings returns equipmentCount:**
+```graphql
+allBuildings(companyId: "PROPERTY_ID") {
+  _id name
+  equipmentCount: sitesCount(modelType: [equipment])
+}
+```
+Use this to verify count after bulk deploy.
+
+**Concurrency + delay sweet spot for equipment:** 5 concurrent + 400ms delay = ~35s per 52 items = 0 errors.
