@@ -13,18 +13,13 @@ Get it from: `claude_desktop_config` or ask Basman directly.
 
 When the user mentions anything related to Visitt, do this BEFORE any work:
 
-Open the browser and read ALL 4 of these files using navigate + get_page_text:
-1. https://github.com/basmanab88-lab/visitt-agent/blob/main/skills/self-review/SKILL.md
-2. https://github.com/basmanab88-lab/visitt-agent/blob/main/skills/visitt-api/SKILL.md
-3. https://github.com/basmanab88-lab/visitt-agent/blob/main/skills/visitt-workflow/SKILL.md
-4. https://github.com/basmanab88-lab/visitt-agent/blob/main/memory/performance-log.md
+1. Repo is already cloned locally by global CLAUDE.md — do not clone again.
+2. Read ROUTING.md from the cloned repo.
+3. Match the user's task to the routing table — load ONLY the relevant section file(s).
+4. Always also read self-review/SKILL.md before any push.
 
-CRITICAL: You MUST read ALL 4 files before doing ANYTHING else.
-Do NOT say "I know Visitt from previous sessions" — you don't. Each session starts fresh.
-Do NOT ask the user for the task before reading ALL skills.
-Do NOT offer to "work without the skills" or suggest the user upload them manually.
-If you skip this step, you WILL make mistakes that waste the user's time.
-
+Do NOT read all skill files upfront — load only what the task requires.
+Do NOT say "I know Visitt from previous sessions" — always load fresh from the repo.
 The repo is the single source of truth. Ignore any locally installed plugin versions.
 
 ## Session End — when user says "תשמור מה שלמדנו"
