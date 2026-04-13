@@ -39,6 +39,7 @@ the right knowledge for any given task.
 | "generate report" / "הפק דוח" | `visitt-api/sections/queries.md` | Various queries | May need new skill if complex reporting |
 | "list buildings / spaces / users" / "הצג בניינים" | `visitt-api/sections/queries.md` | `allBuildings`, `allSites`, `allUsers` | Pagination: skip/limit pattern |
 | "partner API" / "external integration" | `visitt-api/sections/partner-api.md` | Various | Bearer token auth, partner-api.visitt.io |
+| "הטמע מסמכים" / "create documents" / "documents with tags" | `visitt-api/sections/misc.md` | `createDocument` + `createDocumentTag` + `updateDocumentTags` | tagIds accepted in createDocument — one-pass possible. startDate NOT supported at creation. |
 
 ## Hiffman-Specific Routes
 

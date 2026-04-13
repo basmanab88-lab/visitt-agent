@@ -184,7 +184,47 @@ The `eventFields` format documented above (`{ companyId, categoryIds }`) is WRON
 
 
 
-## Documents Mutations (2026-03-21)
+## Documents Mutations (2026-03-21, updated 2026-04-13)
+
+### createDocument — verified 2026-04-13
+```graphql
+mutation createDocument($input: CreateDocumentInput!) {
+  createDocument(input: $input) { _id name __typename }
+}
+```
+Variables: `{ "input": { "companyId": "PROPERTY_ID", "name": "שם המסמך", "tagIds": [] } }`
+- `tagIds` is **required** (pass `[]` if no tags)
+- `startDate` is NOT a valid field in CreateDocumentInput — dates are added separately after creation
+- Pass tag IDs in `tagIds` at creation time → no need for a separate updateDocumentTags call
+
+### updateDocumentTags — verified 2026-04-13
+```graphql
+mutation updateDocumentTags($documentId: String!, $tagIds: [String]!) {
+  updateDocumentTags(documentId: $documentId, tagIds: $tagIds) {
+    _id tags { _id name color __typename } __typename
+  }
+}
+```
+Variables: `{ "documentId": "DOC_ID", "tagIds": ["TAG_ID"] }`
+- Replaces ALL tags on the document — pass full desired list
+- Pass `[]` to remove all tags
+
+### documents query — verified 2026-04-13
+```graphql
+query { documents(input: { companyId: "PROPERTY_ID" }, skip: 0, limit: 100) { documents { _id name tags { _id name } } } }
+```
+
+### documentTags query — verified 2026-04-13
+```graphql
+query { documentTags(companyId: "PROPERTY_ID") { _id name color documentCount } }
+```
+Returns `[]` if no tags exist yet.
+
+### One-pass workflow (create docs WITH tags already set) — 2026-04-13
+1. Create all tags first via `createDocumentTag`, collect IDs into `tagMap`
+2. Pass `tagIds: [tagMap[category]]` inside `createDocument` input — no second pass needed
+3. Use `Promise.all` for batch speed
+
 
 ### deleteDocuments
 mutation deleteDocuments($documentIds: [String!]) {
