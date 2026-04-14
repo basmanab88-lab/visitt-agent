@@ -33,6 +33,7 @@ the right knowledge for any given task.
 | "assign user to inspection" / "שייך עובד לביקורת" | `visitt-api/sections/inspections.md` | `updateAssignment` | Must pass all required fields + assignedUserIds |
 | "assign user to all daily inspections" / "שייך עובד לכל המשימות היומיות" | `visitt-api/sections/inspections.md` + `visitt-api/sections/queries.md` | `assignments` query → batch `updateAssignment` | Filter by interval:"day", then loop. Use Promise.all for speed. |
 | "update settings" / "עדכן הגדרות" | `visitt-workflow` | N/A (UI-based) | Usually requires browser automation |
+| "add categories" / "הוסף קטגוריות" / "הטמע קטגוריות" | `visitt-api/sections/misc.md` | `createCategory` | Input type is `CreateCategoryInput!` NOT `CategoryInput!`. Use `shouldUpdateSingleCompany: true` + `parentCategoryId` for subs. deleteCategory must return `{ _id __typename }`. Batch 10-15 at a time. |
 | "update categories" / "עדכן קטגוריות" | `visitt-api/sections/misc.md` + `visitt-workflow` | N/A (UI-based) | Bulk updates benefit from JS automation |
 | "create work orders" / "פתח קריאות" | `visitt-api/sections/misc.md` | `createWorkOrder` | Can use Partner API |
 | "import data" / "ייבא נתונים" | `visitt-import` | N/A | For bulk data loads from CSV |

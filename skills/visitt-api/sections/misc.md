@@ -1,22 +1,54 @@
 # Visitt API — Categories, Work Orders, Misc
 
-### categories (get all categories for a company)
+### categories (get all categories for a company) — verified 2026-04-14
 ```graphql
-query { allCategories(companyId: "COMPANY_ID") { _id name } }
+query {
+  allCategories(companyId: "COMPANY_ID") {
+    _id name
+    subCategories { _id name }
+  }
+}
 ```
+- `subCategories` field IS valid on allCategories - use it to verify hierarchy
+- No `parentId` or `parentCategoryId` field exposed on allCategories
+- Returns roots; their children available via `subCategories`
 
-### Category mutations Ã¢ÂÂ verified 2026-03-20
-# Remove category from a property (unassign, not delete)
-mutation { removeCategoryFromCompany(categoryId: "ID", companyId: "COMPANY_ID") }
-
-# Delete a category globally
-mutation { deleteCategory(categoryId: "ID") }
-
-# Create a category (requires customerId, no color field)
-mutation createCategory($input: CategoryInput!) {
+### createCategory — verified 2026-04-14
+```graphql
+mutation CreateCategory($input: CreateCategoryInput!) {
   createCategory(input: $input) { _id name }
 }
-# Variables: { input: { name: "Fire Safety", companyId: "COMPANY_ID", customerId: "SLUG" } }
+```
+Root category variables:
+```json
+{ "input": { "name": "Name", "customerId": "SLUG", "companyId": "PROPERTY_ID", "shouldUpdateSingleCompany": true } }
+```
+Sub-category variables (add parentCategoryId):
+```json
+{ "input": { "name": "Sub", "customerId": "SLUG", "companyId": "PROPERTY_ID", "shouldUpdateSingleCompany": true, "parentCategoryId": "PARENT_ID" } }
+```
+CRITICAL gotchas:
+- Input type is `CreateCategoryInput!` NOT `CategoryInput!` - wrong type causes "Invalid query"
+- DO NOT declare `$companyId` in mutation signature - only `$input: CreateCategoryInput!`
+- `shouldUpdateSingleCompany: true` scopes to this property only
+- `customerId` = customer slug (e.g. "bg_manage"), NOT an ObjectId
+- "Category with the same name already exists" = already created, safe to skip
+- NO `assignCategoryToCompany` mutation exists - use `createCategory` with `shouldUpdateSingleCompany: true`
+
+### deleteCategory — verified 2026-04-14
+```graphql
+mutation DeleteCategory($categoryId: String!) {
+  deleteCategory(categoryId: $categoryId) { _id __typename }
+}
+```
+CRITICAL: Must return `{ _id __typename }` - omitting response body causes "Invalid query" error.
+
+### Bulk category workflow — 2026-04-14
+1. Create root categories -> collect IDs into idMap[name] = _id
+2. Query allCategories after creation and match by name to rebuild idMap
+3. Create sub-categories with parentCategoryId: idMap[parentName]
+4. Batch in groups of 10-15 with 150-200ms delay to avoid CDP timeout
+5. Verify: allCategories(...) { _id name subCategories { _id name } }
 
 ### Automation mutations Ã¢ÂÂ verified 2026-03-20
 mutation createAutomation($input: AutomationInput!) {
