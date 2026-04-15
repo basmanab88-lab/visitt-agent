@@ -1,5 +1,83 @@
 # Visitt API — Hiffman National (Client-Specific)
 
+---
+
+## COI Requirements Import (2026-04-15)
+
+### Background
+Hiffman manages COI (Certificate of Insurance) requirements per Region (property owner group).
+The source data comes from the client as an Excel file (`Hiffman Company COI Requirements.xlsx`).
+The import target format is `coi_requirements.xlsx` - a flat file with 47 columns.
+
+### Source file structure
+- Sheet: `Hiffmans_COI_PRD`
+- Columns: `ORGANIZATION_NAME`, `BUILDING_NAME`, `TYPE`, `MIN_COVERAGE`, `REQUIREMENT_FOR_COMPLIANCE`, `DISPLAY_ORDER`, `COVERAGE_SOURCE`, `CUSTOM_COVERAGE_ID`
+- One row per: (Organization x Building x Coverage Type)
+- ~245,000 rows total
+
+### Region mapping
+The source file does NOT have a Region column - it must be added by matching `BUILDING_NAME`
+to Visitt property names (from Properties export CSV: `#`, `Identifier`, `Name`, `Region`, `Address`).
+Many building names are slightly different - use **fuzzy matching** (rapidfuzz `token_set_ratio`, threshold 65).
+
+```python
+from rapidfuzz import process, fuzz
+match = process.extractOne(search_name, visitt_names, scorer=fuzz.token_set_ratio)
+region = region_lookup[match[0]] if match and match[1] >= 65 else ''
+```
+
+### Target file format (coi_requirements.xlsx)
+- 47 columns: Region Name (A), Type (B), Name (C), then insurance coverage columns (D-AU)
+- One row per: **(Region + ORGANIZATION_NAME)**
+- **Type** column (B) = always `"vendor"`
+- **Name** column (C) = `ORGANIZATION_NAME` from source
+
+### TYPE -> target column mapping (6 coverage categories)
+The source has 500+ TYPE variations. They map to 6 target columns:
+
+| Source TYPE pattern | Target column | Column header |
+|---|---|---|
+| GL each occurrence / occurrence / per occ / occ | **I** | General Liability Insurance - Occurrence |
+| GL aggregate / agg | **K** | General Liability Insurance - Limits - General Aggregate |
+| Products / completed operations | **O** | General Liability Insurance - Limits - Products/Completed Ops Aggregate |
+| Auto / automobile / automotive | **W** | Automobile Liability Insurance - Coverage - Any Auto |
+| Umbrella / excess liability | **AJ** | Umbrella/Excess Liability Insurance - Deductible |
+| Workers comp / employer's liability / WC | **AR** | Workers' Compensation Insurance - Limits - Other |
+
+### Python mapping function
+```python
+import re
+def map_type(t):
+    t = str(t).lower().strip()
+    if re.search(r'w/c|workers?\s*comp|workman|work.*comp|employer', t): return 'AR'
+    if re.search(r'umbrella|excess\s*liab', t): return 'AJ'
+    if re.search(r'auto(?:mobile)?|automot|business\s*auto', t): return 'W'
+    if re.search(r'product|completed\s*op', t): return 'O'
+    if re.search(r'general\s*liab|gl\b|commercial.*gen|comp.*gen', t):
+        if re.search(r'aggr?egate|agg\b|/\s*agg\b', t): return 'K'
+        return 'I'
+    if re.search(r'aggr?egate', t): return 'K'
+    return None
+```
+Coverage: ~99.8% of rows mapped successfully.
+
+### Build logic
+1. Add REGION column via fuzzy match
+2. Map TYPE to target column
+3. Group by (REGION, ORGANIZATION_NAME, TARGET_COL) - take MAX(MIN_COVERAGE)
+4. Pivot: one row per (REGION, ORGANIZATION_NAME)
+5. Write using openpyxl, copying header style exactly from template
+
+### Key gotchas
+- Building names in source often have trailing spaces - always `.strip()`
+- Braced names like `{1385 Madeline Ln}` = inactive properties - strip `{}` before fuzzy match
+- `(Archive)` suffix = old name for active property - remove before matching
+- MIN_COVERAGE = 0 is valid (means "required but no $ minimum specified")
+- For same (Region + Org + Type), multiple buildings may have different values - use MAX
+- Template has 47 columns (A-AU) - column indices: I=8, K=10, O=14, W=22, AJ=35, AR=43
+
+---
+
 ### Template IDs (Hiffman National — constant)
 | Inspection Name | Template ID |
 |---|---|
