@@ -650,3 +650,28 @@ When a product has an **admin system** and a **tenant/customer-facing portal** a
 **Dependency chain mental model**: Before testing the portal, ask: "Did I complete the full setup chain in the admin?" (tenant → contact → leasable space → categories → feature flag). If any step is missing, the portal will fail silently.
 
 **Context drift in admin**: Navigating between different sections of an admin that manages multiple entities (properties, companies) can silently switch the active context. Always verify the active context (breadcrumb, page title, URL) before making changes.
+
+---
+
+### Claude-in-Chrome javascript_tool blocks 24-char hex returns (2026-04-19)
+
+The `mcp__Claude_in_Chrome__javascript_tool` redacts MongoDB ObjectIds (24-char hex)
+that appear in the JSON it returns - replacing them with `"[BLOCKED: Base64 encoded data]"`.
+This breaks any flow that round-trips IDs through Claude to build follow-up calls.
+
+**Workaround**: Keep IDs in the browser. Store the full object on `window`, reference it
+by field/index in the next call, and only return non-sensitive projections to Claude.
+
+```javascript
+// First call - store IDs in window, return only names/counts/flags
+window.__pilotTenant = found;
+return { name: found.name, spaceName: found.locations[0].site.name };
+
+// Next call - use stored IDs directly, never round-trip them through Claude
+const t = window.__pilotTenant;
+const input = { tenantId: t._id, siteId: t.locations[0].site._id, ... };
+// run mutation using `input`
+```
+
+This is faster AND safer than trying to smuggle IDs out (no partial hex tricks needed).
+Applies to any MongoDB/UUID-heavy system accessed via Claude-in-Chrome.

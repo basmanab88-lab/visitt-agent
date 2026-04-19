@@ -30,6 +30,7 @@ the right knowledge for any given task.
 | "create equipment" / "הוסף ציוד" | `visitt-api/sections/buildings-spaces.md` | `createEquipment` | Needs buildingId + floorId + siteId |
 | "add vendors" / "הוסף ספקים" | `visitt-api/sections/vendors.md` | `setVendor` | E.164 phone format required; vendors ≠ tenants module |
 | "create tenants" / "הוסף דיירים" | `visitt-api/sections/tenants-contacts.md` | Various | Can use Partner API or Internal API |
+| "rename tenants" / "שנה שם דייר" / "שנה שם דירה" / "rename spaces" | `visitt-api/sections/tenants-contacts.md` | `setTenant` + `updateSite` | See "Rename tenant + rename space pattern" (2026-04-19). updateSite accepts minimal `{name}`. setTenant replaces entire tenant - include all locations+contacts. |
 | "assign user to inspection" / "שייך עובד לביקורת" | `visitt-api/sections/inspections.md` | `updateAssignment` | Must pass all required fields + assignedUserIds |
 | "assign user to all daily inspections" / "שייך עובד לכל המשימות היומיות" | `visitt-api/sections/inspections.md` + `visitt-api/sections/queries.md` | `assignments` query → batch `updateAssignment` | Filter by interval:"day", then loop. Use Promise.all for speed. |
 | "update settings" / "עדכן הגדרות" | `visitt-workflow` | N/A (UI-based) | Usually requires browser automation |

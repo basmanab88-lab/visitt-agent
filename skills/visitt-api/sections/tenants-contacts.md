@@ -228,4 +228,69 @@ const leasable = Object.entries(cache)
 
 ---
 
+### Rename tenant + rename space pattern (verified 2026-04-19, production)
+
+Task: rename a tenant AND its leased space in one pass. Verified on מתחם תש"ח
+(companyId: 69bbf32a22a9764e3bb59c19), one pilot then bulk over 70 units.
+
+Two mutations, run in any order:
+
+1. Rename the space (the apartment/suite):
+```graphql
+mutation updateSite($siteId: String!, $input: UpdateSiteInput!) {
+  updateSite(siteId: $siteId, input: $input) { _id name }
+}
+```
+Minimal input works: `{ "name": "New Space Name" }`. Other UpdateSiteInput fields
+(type, parentBranches, modelType, buildingName) are optional for rename. Confirmed
+by running on a leasable_site with only `{name}` - no other field required, no
+side effects on tenant linkage or isLeased flag.
+
+2. Rename the tenant (setTenant replaces ENTIRE tenant - must include full locations+contacts):
+```javascript
+const input = {
+  tenantId: t._id,
+  companyId: "PROPERTY_ID",
+  name: "New Tenant Name",
+  tenantCode: "",
+  billingCompanyName: "",
+  billingContactName: "",
+  billingAddress: "",
+  isTaxExempt: false,
+  locations: t.locations.map(l => ({
+    buildingId: l.building._id,
+    siteId: l.site._id,
+    isLeased: l.isLeased
+  })),
+  contacts: t.contacts.map(c => ({ _id: c._id, roles: [] }))
+};
+// fetch setTenant with { input }
+```
+
+**Gotchas verified by post-mutation query:**
+- Contacts (name, phone, email) remain attached and intact
+- isLeased flag preserved
+- No duplicate tenant created
+- Total tenants count unchanged after rename
+
+**Pattern to fetch targets first:**
+```graphql
+query tenants($input: TenantSearchInput!) {
+  tenants(input: $input) {
+    tenants {
+      _id name
+      locations { site { _id name } building { _id } isLeased }
+      contacts { _id }
+    }
+  }
+}
+```
+Variables: `{ "input": { "companyId": "PROPERTY_ID" } }`.
+Note: TenantSearchInput (singular), NOT TenantsSearchInput. Both exist in schema;
+using the plural one for this query returns GRAPHQL_VALIDATION_FAILED "Invalid query".
+
+**Bulk performance:** 70 units × 2 mutations = 140 calls, ran clean at 400ms delay.
+
+---
+
 
