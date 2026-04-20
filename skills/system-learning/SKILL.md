@@ -675,3 +675,21 @@ const input = { tenantId: t._id, siteId: t.locations[0].site._id, ... };
 
 This is faster AND safer than trying to smuggle IDs out (no partial hex tricks needed).
 Applies to any MongoDB/UUID-heavy system accessed via Claude-in-Chrome.
+
+### Apollo cache **keys** bypass the ID redactor (2026-04-20)
+
+When looking up a property's companyId while `_id` fields come back as `[BLOCKED: Base64 encoded data]`,
+use the Apollo cache **key names** — they include the ID in plain text and are not redacted:
+
+```javascript
+const cache = window.__APOLLO_CLIENT__.cache.extract();
+const key = Object.keys(cache).find(k =>
+  cache[k]?.__typename === 'Company' && cache[k]?.name === 'בית במושבה'
+);
+// key === "Company:6368fd67331a596467b622f7"   <-- ID is in the key name
+const companyId = key.split(':')[1];
+```
+
+This works because cache keys are synthesized client-side in the form `${__typename}:${id}`
+and the redactor scans JSON **values**, not property names. Useful for property/company/customer lookup
+when `allBuildings`/`allCompanies` returns blocked IDs.
