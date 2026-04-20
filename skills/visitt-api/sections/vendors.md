@@ -43,6 +43,19 @@ const fmtPhone = (p) => {
   return digits.length === 10 ? `+1${digits}` : `+${digits}`;
 };
 
+**Israeli phone formatter (added 2026-04-20):**
+```javascript
+const fmtIsraeliPhone = (p) => {
+  if (!p) return '';
+  const d = p.replace(/\D/g, '');
+  if (!d) return '';
+  if (d.startsWith('0')) return '+972' + d.slice(1);  // 050-xxx -> +97250xxx
+  return '+' + d;
+};
+```
+
+> **GOTCHA — Israeli VoIP prefixes (073/074) rejected (discovered 2026-04-20):** Visitt's libphonenumber rejects `+972 73...` and `+972 74...` numbers with `"Invalid phone: +972732294944"` even though they are technically valid Israeli VoIP numbers. **Workaround**: pass `phone: ""` and put the number in `notes` (e.g., `"משרד: 073-2294944 (VoIP)"`). If a mobile number is available for a contact, use that in `phone` instead. Mobile (05X), landline (02/03/04/08/09) work fine. Short codes like `*9944`, `*4971`, `*3114` also go to notes. (Confirmed on companyId 6368fd67331a596467b622f7 / בית במושבה, 2026-04-20)
+
 **Vendor with no contact:** Pass empty strings for `contactName`, `email`, `phone`. The API accepts this — the vendor will appear in the list without contact info.
 
 **Update existing vendor:** Pass `"vendorId": "VENDOR_ID"` inside the input object. Do NOT use `_id` — the field is called `vendorId` in VendorInput. Using `_id` returns `"Field '_id' is not defined by type VendorInput"`. (discovered 2026-04-01)
