@@ -293,4 +293,63 @@ using the plural one for this query returns GRAPHQL_VALIDATION_FAILED "Invalid q
 
 ---
 
+### Tenants + Contacts WITHOUT phone/email (verified 2026-04-20, production)
+
+Task: create tenants and their contacts when customer provides NAMES ONLY (no phone, no email).
+Verified on קרסו חדרה (companyId: `68db9312c6dcec3d08b55c26`), 16 tenants + 15 contacts, 0 failures.
+
+**Key finding:** `addContacts` accepts `phone: ""` and `email: ""` without validation rejection.
+Server returns `phone: null` and `email: null` in the response. No placeholder needed.
+Contacts created this way can't be invited to the portal (no delivery channel) but they show up
+in the tenant's contacts list normally.
+
+**Recommended flow: tenant-then-contact (NOT setTenant with contacts[])**
+
+When creating NEW tenants with NEW contacts, do NOT try to pass contacts in setTenant's
+`contacts` array — those require `_id` which doesn't exist yet for new contacts. Instead:
+
+1. `setTenant` — create the tenant with `contacts: []`, `locations: []`. Capture `tenantId`.
+2. `addContacts` — create the contact linked via `tenants: [{ _id: tenantId, isAdmin: false }]`.
+
+This pattern also lets the contact's archivable lifecycle stay independent of the tenant's.
+
+**Pilot-first-then-batch is mandatory on production.** Always create ONE tenant + contact pair
+first, confirm success, then loop the rest. Caught no issues this time but the rule stood up on
+מתחם תש"ח rename session (2026-04-19) where pilot caught a bug before bulk.
+
+**API shapes used (copy-paste ready):**
+```javascript
+// setTenant (minimal — empty tenant)
+{
+  input: {
+    companyId: PROPERTY_ID,
+    name: "Tenant Name",
+    tenantCode: "", billingCompanyName: "", billingContactName: "",
+    billingAddress: "", isTaxExempt: false,
+    locations: [], contacts: []
+  }
+}
+
+// addContacts (one contact, name-only, linked to tenant)
+{
+  input: [{
+    companyId: PROPERTY_ID,
+    name: "Contact Name",
+    phone: "", email: "",
+    extraInfo: "",
+    tenants: [{ _id: TENANT_ID, isAdmin: false }],
+    locations: [], supervisedContactIds: []
+  }]
+}
+```
+
+**Bulk performance:** 16 tenants × 2 mutations (setTenant + addContacts) + 1 pilot-only tenant
+= 31 mutations ran clean at 400ms delay. ~15 seconds total.
+
+**When the customer didn't mark space assignments:** create tenants WITHOUT locations
+(`locations: []`). You can add locations later with another setTenant call — but remember
+setTenant replaces the entire tenant, so you must re-include contacts in that later call.
+
+---
+
 
