@@ -481,3 +481,92 @@ Common errors that revealed the correct shape:
 - `Field "deleteSites" must not have a selection since type "[String!]!" has no subfields.` -> remove `{ _id __typename }`
 - `Unknown argument "ids"/"_ids"` + `Field "deleteSites" argument "siteIds" of type "[String!]!" is required` -> use `siteIds`
 
+
+## updateSite — Two-Argument Signature (verified 2026-04-26)
+
+`updateSite` requires **TWO separate GraphQL arguments**: `siteId: String!` AND `input: UpdateSiteInput!`. It is NOT `updateSite(input: { _id, name, ... })` — that fails with `Field "updateSite" argument "siteId" of type "String!" is required, but it was not provided.`
+
+```graphql
+mutation updateSite($siteId: String!, $input: UpdateSiteInput!) {
+  updateSite(siteId: $siteId, input: $input) { _id name }
+}
+```
+
+```javascript
+fetch('/graphql', {
+  method: 'POST', headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify({
+    query: `mutation updateSite($siteId: String!, $input: UpdateSiteInput!) {
+      updateSite(siteId: $siteId, input: $input) { _id name }
+    }`,
+    variables: { siteId: 'SITE_ID', input: { name: 'New Name' } }
+  })
+});
+```
+
+Performance: 440 renames in 89.5s with concurrency 5 + 400ms delay = 0 errors.
+
+## Bidi Display Fix — RLI/PDI Wrap for Hebrew + Latin-Letter-Suffix Names (verified 2026-04-26)
+
+Visitt's site-name renders inside a parent div with `direction: ltr` + `unicode-bidi: isolate`. For names like `מחסן 33S` or `חניה 38P` (Hebrew prefix + space + digits + trailing Latin letter), the bidi algorithm in this LTR-isolated context fragments the LTR run — the trailing `S`/`P` detaches from the digits and renders on the wrong side of the Hebrew word.
+
+**Symptom:** stored name `חניה 38P` renders visually as `38 חניה P` (or similar layout where the trailing letter is detached from the digits).
+
+**Fix:** wrap the name with **RLI (U+2067)** ... **PDI (U+2069)**. This forces RTL base direction inside the isolate, keeping `38P` together as a single LTR run visually.
+
+```javascript
+const wrapped = '⁧' + name + '⁩';   // ⁧name⁩
+// stored: "⁧חניה 38P⁩" — visually renders as "38P חניה" L-to-R = "חניה 38P" reading RTL
+```
+
+**Why other bidi marks DON'T fix it (verified empirically by per-char position measurement):**
+
+| Marker | Format | Result | Works? |
+|---|---|---|---|
+| LRM end | `חניה 38P‎` | `38 חניה P` | ✗ |
+| LRM start | `‎חניה 38P` | `38 חניה P` | ✗ |
+| LRM both | `‎חניה 38P‎` | `38 חניה P` | ✗ |
+| RLM end | `חניה 38P‏` | `38 חניה P` | ✗ |
+| LRI/PDI | `⁦חניה 38P⁩` | `38 חניה P` | ✗ |
+| LRE/PDF | `‪חניה 38P‬` | `38 חניה P` | ✗ |
+| LRO/PDF | `‭חניה 38P‬` | (similar) | ✗ |
+| NBSP separator | `חניה 38P` | `38 חניה P` | ✗ |
+| Colon | `חניה: 38P` | `38 :חניה P` | ✗ |
+| Parens | `חניה (38P)` | works visually but adds visible chars | partial |
+| Value first | `38P חניה` | `38P חניה` | ✓ (visible reorder) |
+| **RLI/PDI** | `⁧חניה 38P⁩` | `38P חניה` | ✓ (invisible) |
+
+**Investigation method (DOM-first, no user round-trips):**
+
+```javascript
+// 1. Find target element
+const target = [...document.querySelectorAll('span.Tooltip-wrapper')]
+  .find(el => el.textContent.includes('חניה'));
+
+// 2. Inspect parent CSS chain
+let cur = target;
+for (let i = 0; i < 10 && cur; i++) {
+  const cs = getComputedStyle(cur);
+  console.log({ tag: cur.tagName, dir: cs.direction, bidi: cs.unicodeBidi });
+  cur = cur.parentElement;
+}
+
+// 3. Test format options by measuring per-char pixel x positions
+const original = target.firstChild.data;
+const measure = (text) => {
+  target.firstChild.data = text;
+  const tn = target.firstChild;
+  const positions = [];
+  for (let i = 0; i < tn.length; i++) {
+    const r = document.createRange();
+    r.setStart(tn, i); r.setEnd(tn, i + 1);
+    positions.push({ ch: tn.data[i], x: Math.round(r.getBoundingClientRect().left) });
+  }
+  return [...positions].sort((a,b) => a.x - b.x).map(p => p.ch).join('');
+};
+console.log(measure('⁧חניה 38P⁩'));  // visual L-to-R order
+target.firstChild.data = original;  // restore
+```
+
+This reveals the actual rendered glyph order and identifies the working format BEFORE making any DB writes.
+

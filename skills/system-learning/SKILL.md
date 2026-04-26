@@ -693,3 +693,46 @@ const companyId = key.split(':')[1];
 This works because cache keys are synthesized client-side in the form `${__typename}:${id}`
 and the redactor scans JSON **values**, not property names. Useful for property/company/customer lookup
 when `allBuildings`/`allCompanies` returns blocked IDs.
+
+### DOM-First Methodology for UI Rendering Bugs (2026-04-26)
+
+When the user reports a UI rendering issue (text appears reversed, characters in wrong place, layout broken), DO NOT guess fixes and ask the user to verify each one. That wastes their time and erodes trust.
+
+**The correct flow:**
+1. Read the actual DOM where the broken text lives — find the element via `document.querySelectorAll`, walk up the parent chain.
+2. Inspect the rendering chain — `getComputedStyle` for `direction`, `unicode-bidi`, `text-align`, `writing-mode` on each parent up the tree.
+3. Test format options programmatically by setting `node.firstChild.data = candidate` and measuring per-character pixel positions via `Range.getBoundingClientRect()`.
+4. Sort by `x` to get the actual visual L-to-R order.
+5. Find the format that produces the desired visual layout, then apply it via API.
+
+**Real session example (subspace bidi rendering):**
+- User reported: subspace names like `מחסן 33S` rendering with `S` detached from `33` and placed on the wrong side of the Hebrew word.
+- Root cause: Visitt's site-name component uses `direction: ltr` + `unicode-bidi: isolate` on a parent div. In LTR base with mixed Hebrew + Latin-letter-after-digits, the bidi algorithm fragments the LTR run.
+- Tested 12 formats programmatically (LRM at start/end/both, RLM, LRE/PDF, LRI/PDI, RLI/PDI, NBSP, value-first, hyphen, colon, no-space, parens). Only **RLI/PDI** (`U+2067 ... U+2069`) and value-first kept the LTR run together visually.
+- Solution: wrap each name with `⁧` ... `⁩`. Storage stays semantically `מחסן 33S`, visual renders correctly without changing user-visible content.
+
+**Per-char measurement technique:**
+```javascript
+const target = document.querySelector('span.Tooltip-wrapper');
+const original = target.firstChild.data;
+const measure = (text) => {
+  target.firstChild.data = text;
+  const tn = target.firstChild;
+  const positions = [];
+  for (let i = 0; i < tn.length; i++) {
+    const r = document.createRange();
+    r.setStart(tn, i); r.setEnd(tn, i + 1);
+    positions.push({ ch: tn.data[i], x: Math.round(r.getBoundingClientRect().left) });
+  }
+  return [...positions].sort((a,b) => a.x - b.x).map(p => p.ch).join('');
+};
+const visualLR = measure('candidate text');  // visual order
+target.firstChild.data = original;  // restore
+```
+
+This technique works for ANY UI rendering issue — bidi, kerning, line-break behavior, whitespace handling. No round-trips through the user.
+
+### Don't undo deployed work without explicit permission (2026-04-26)
+
+After successful deploy + user-approved verification, any "improvement" the user did not request is a NEW change requiring NEW approval — even if it looks like a fix. Specifically: do not strip / rename / reformat data that was deployed exactly per the approved preview, unless the user explicitly asks for it. The user's "great, only that the names came out a bit reversed" was about **display rendering**, not about wanting the data stripped. Confirm scope of fix before mutating data.
+
