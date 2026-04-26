@@ -43,6 +43,7 @@ the right knowledge for any given task.
 | "partner API" / "external integration" | `visitt-api/sections/partner-api.md` | Various | Bearer token auth, partner-api.visitt.io |
 | "הטמע מסמכים" / "create documents" / "documents with tags" | `visitt-api/sections/misc.md` | `createDocument` + `createDocumentTag` + `updateDocumentTags` | tagIds accepted in createDocument — one-pass possible. startDate NOT supported at creation. |
 | "find companyId / property ID" / "מצא נכס" / "איזה נכס" | `system-learning/SKILL.md` (Apollo cache keys) + `visitt-api/sections/queries.md` | `allCompanies { _id name }` → bypass blocked `_id` via Apollo cache key `Company:ID` | Added 2026-04-20 (בית במושבה = `6368fd67331a596467b622f7`) |
+| "add subspaces" / "הוסף תתי אתרים" / "הטמעת מחסנים וחניות" / "מחסן+חניה לדירה" | `visitt-api/sections/buildings-spaces.md` → "Subspace Deploy Pattern" | `insertSite` (one-shot with `parentSiteId`) | Added 2026-04-26. modelType=leasable_site, type=דירה. Garden apt naming reverses (`1G` Excel ↔ `G1` Visitt). Split comma-separated values into multiple subspaces. |
 
 ## Hiffman-Specific Routes
 

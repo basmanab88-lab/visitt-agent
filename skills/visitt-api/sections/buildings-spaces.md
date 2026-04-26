@@ -421,3 +421,63 @@ allBuildings(companyId: "PROPERTY_ID") {
 Use this to verify count after bulk deploy.
 
 **Concurrency + delay sweet spot for equipment:** 5 concurrent + 400ms delay = ~35s per 52 items = 0 errors.
+
+## Subspace Deploy Pattern - Storage/Parking under Apartments (verified 2026-04-26)
+
+Mass-add subspaces (storage `מחסן` and parking `חניה`) under leasable_site apartments using ONE-SHOT `insertSite` with `parentSiteId` set to the apartment ID. No `changeSitesLocation` needed when `parentSiteId` is in the input.
+
+**Mutation pattern:**
+```javascript
+fetch('/graphql', {
+  method: 'POST', headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify({
+    query: `mutation insertSite($input: InsertSiteInput!) {
+      insertSite(input: $input) { _id name __typename }
+    }`,
+    variables: { input: {
+      buildingId: BUILDING_ID,
+      parentSiteId: APARTMENT_ID,    // the parent site (leasable_site apt)
+      modelType: 'leasable_site',     // matches existing children pattern
+      name: 'מחסן 38S',                // or 'חניה 36P'
+      type: 'דירה'                    // inherit type from parent apartment
+    }}
+  })
+});
+```
+
+**Key findings:**
+- `modelType: 'leasable_site'` for sub-rentables (matches sibling children like "אינטרקום", "מטבח")
+- `type: 'דירה'` inherits the parent apartment's type field
+- `parentSiteId` in `insertSite` input handles nesting in one call - no follow-up `changeSitesLocation`
+- 440 subspaces across 13 buildings deployed in 88.5s with concurrency 5 + 400ms delay = 0 errors
+
+**Garden apartment naming reversal (Excel vs Visitt):**
+- Excel: `דירת גן 1G`, `דירת גן 2G` (number-letter)
+- Visitt: `דירת גן G1`, `דירת גן G2` (letter-number)
+Match regex: `דירה מספר (\d+[A-Z])` for regular, `דירת גן ([A-Z]\d+)` for garden, then reverse the garden key (`G1` → `1G`).
+
+**Comma-separated multi-values in deploy sheets:**
+Excel cells may contain multiple values per type, e.g. `9P,65P` means 2 parking spots. Split on `,` and create one subspace per value. 6 such cells in this dataset → 6 extra subspaces (313 → 319 unique IDs from 313 apt rows; here 434 total work items expanded to 440 actual creates).
+
+## deleteSites - Correct Argument and Return Shape (verified 2026-04-26, supersedes 2026-04-09)
+
+The mutation uses `siteIds: [String!]!` (NOT `ids` or `_ids`) and returns a plain `[String!]!` (NO subselection allowed).
+
+```graphql
+mutation deleteSites($siteIds: [String!]!) { deleteSites(siteIds: $siteIds) }
+```
+
+```javascript
+fetch('/graphql', {
+  method: 'POST', headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify({
+    query: `mutation deleteSites($siteIds: [String!]!) { deleteSites(siteIds: $siteIds) }`,
+    variables: { siteIds: ['siteId1', 'siteId2'] }
+  })
+});
+```
+
+Common errors that revealed the correct shape:
+- `Field "deleteSites" must not have a selection since type "[String!]!" has no subfields.` -> remove `{ _id __typename }`
+- `Unknown argument "ids"/"_ids"` + `Field "deleteSites" argument "siteIds" of type "[String!]!" is required` -> use `siteIds`
+
