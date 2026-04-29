@@ -736,3 +736,54 @@ This technique works for ANY UI rendering issue — bidi, kerning, line-break be
 
 After successful deploy + user-approved verification, any "improvement" the user did not request is a NEW change requiring NEW approval — even if it looks like a fix. Specifically: do not strip / rename / reformat data that was deployed exactly per the approved preview, unless the user explicitly asks for it. The user's "great, only that the names came out a bit reversed" was about **display rendering**, not about wanting the data stripped. Confirm scope of fix before mutating data.
 
+
+### Image Parsing — Always Verify Before Deploy (2026-04-26)
+
+When the user provides a screenshot/photo as the data source for a deploy (contacts list, equipment table, tenant roster, etc.), my OCR-style reading of the image is **unreliable**. Common errors observed:
+
+- Confusing similar Hebrew letters: ק↔ח (qof vs chet), ת↔ט (tav vs tet), ד↔ר (dalet vs resh)
+- Misreading column headers as cell values (e.g., reading "מייל לא ידוע" as the contact's name when it's actually a description in the email column)
+- Missing trailing characters / digits in phone numbers
+- Misreading punctuation (parens, hyphens) that affect bidi rendering
+
+**The rule: before any deploy from image-sourced data, present a markdown table with all extracted fields and explicitly ask the user to verify line-by-line.** Don't combine "extract + deploy" in one step.
+
+```
+| Field 1 | Field 2 | Field 3 |  ← my extraction
+|---------|---------|---------|
+| ...     | ...     | ...     |
+```
+
+This caught 3 errors in the Yokneam tenant deploy session that would have shipped wrong otherwise:
+- "(שם לא ידוע)" was actually "מקסים"
+- "יוקי בש" was actually "יוחי בדש"
+- The user verified the rest matched
+
+The verification table costs maybe 30 seconds of user time. The cost of bad data in production is much higher (rename loops, customer confusion, audit trails).
+
+### Don't Invent Data Fixes (reinforced 2026-04-26)
+
+Repeating the lesson from the subspace-bidi session: when source data is broken (a phone number that fails validation, a name field that looks weird, an email that doesn't match the domain), DO NOT silently invent a "fix" by adding/removing characters and saving. This generates false data that looks like the user's data but isn't.
+
+**The correct flow:**
+1. Try the data as-given.
+2. If the API rejects, report the rejection to the user and ASK what to do.
+3. Options: leave the field empty, skip the row, or get correct data from user.
+
+**Never:** "I added a 0 at the end because that was the only format the API accepted." That's not a fix — that's data fabrication.
+
+Made this mistake twice in two sessions (subspace bidi LRM-stripping, and Yokneam phone-digit-padding). Recording it again here for emphasis.
+
+### Customer-facing message etiquette (2026-04-26)
+
+When drafting a message FROM Basman TO an end customer (someone who hasn't met me/Basman before), always start with:
+1. Greeting + recipient name
+2. Identification: "אני בסמן מהצוות הטכני של ויזיט"
+3. Context: what we're doing for them
+4. Clear ask
+5. Sign off
+
+Do NOT just dive into the questions. The customer has no idea who Basman is or why he's asking.
+
+Forbidden in Hebrew output: em-dashes (—). Use regular hyphens (-) or rewrite the sentence. Repeated reminder needed because I keep forgetting this.
+

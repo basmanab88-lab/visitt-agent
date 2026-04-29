@@ -353,3 +353,51 @@ setTenant replaces the entire tenant, so you must re-include contacts in that la
 ---
 
 
+
+## setTenant accepts regular `site` modelType (verified 2026-04-26 Yokneam)
+
+`setTenant` `locations[].siteId` accepts BOTH `modelType: "leasable_site"` AND `modelType: "site"` (regular site). No need to call `makeSpacesLeasable` first to convert.
+
+Verified by: created `_TEST_TENANT_DELETE_ME_` linking to a regular `site` ("פראגון"), succeeded, then `deleteTenant`. Cleanup confirmed.
+
+```javascript
+// Works fine - no need to convert space type first
+setTenant({ input: { 
+  companyId, 
+  name: "Tenant Name",
+  locations: [{ buildingId, siteId: REGULAR_SITE_ID, isLeased: true }],
+  contacts: []
+}})
+```
+
+This unblocks bulk tenant deployment for properties where most spaces are `modelType: "site"` rather than `leasable_site`.
+
+## Orphan contact failure — always verify tenant link after addContacts (verified 2026-04-26)
+
+When creating contacts with `addContacts` and a `tenants[]` link, the API may silently return success but leave the contact **orphaned** (no tenant linkage). Cause is unclear — possibly an issue with special characters in the tenant name (hyphens + English mixed: e.g., `"שפיירא-SMART SOLUTIONS-נורלמן"`). Hash-key lookup in JS may produce phantom mismatches.
+
+**Symptom:** `addContacts` returns success, contact exists in `contacts` query, but the `tenants` field on the contact is `[]`, and the corresponding tenant's `contacts` field doesn't include it.
+
+**Mitigation:**
+1. After bulk `addContacts`, query each tenant's contacts to verify count matches expected.
+2. If orphans found, use `updateContact` with the correct `tenants: [{ _id: tenantId, isAdmin: false }]` to relink.
+
+```javascript
+// Verification query
+const r = await fetch('/graphql', {
+  body: JSON.stringify({
+    query: `query contacts($input: ContactSearchInput!, $skip: Int!, $limit: Int!) {
+      contacts(input: $input, skip: $skip, limit: $limit) {
+        contacts { _id name tenants { _id name } }
+      }
+    }`,
+    variables: { input: { companyId, isArchived: false }, skip: 0, limit: 100 }
+  })
+}).then(r => r.json());
+// orphan = contacts with tenants.length === 0
+```
+
+## Anomaly: name field substitution at create time (open question, 2026-04-26)
+
+Single observed case: created contact with input `name: '(שם לא ידוע)'`, contact was saved with `name: 'שיר '` (with trailing space). Cannot reproduce reliably. Possibly: server-side substitution rule on the parens char `(` triggers some text-replace logic in Visitt's contacts pipeline. Safe practice: don't use parentheses in contact names; use plain text or skip the field.
+
