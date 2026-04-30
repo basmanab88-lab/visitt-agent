@@ -232,3 +232,25 @@ window.fetch = async (...args) => {
 };
 // Now perform the action in the UI — the mutation name appears in the console
 
+
+### issuesCount — count work orders with filters (verified 2026-04-30)
+```graphql
+{ issuesCount(input: { companyId: "PROPERTY_ID" }) }
+{ issuesCount(input: { companyId: "PROPERTY_ID", categoryId: "CAT_ID" }) }
+{ issuesCount(input: { companyId: "PROPERTY_ID", subCategoryId: "SUBCAT_ID" }) }
+```
+- Returns a plain integer (not paginated, not nested)
+- `IssuesSearchInput!` is required — query fails without `input`
+- `categoryIds` array is NOT valid — use `categoryId` (singular)
+- `openIssuesCount` also works but has no filters (returns global count)
+- Discovered from browser console at /company/PROPERTY_ID/issues page
+
+### Category audit pattern — check existing categories across properties (2026-04-30)
+Use `allCategories(companyId)` + `issuesCount(input: { companyId, categoryId })` to audit:
+1. Fetch categories per property: `allCategories(companyId: "ID") { _id name subCategories { _id name } }`
+2. Build flat map: category name → { id, type: root/sub, parentName }
+3. For each target category, do fuzzy match against the map
+4. Get WO count per matched category via `issuesCount`
+- Use parallel Promise.all for step 4 (29 fetches completed fast)
+- `companies(limit, skip, search: "keyword")` is the correct way to find properties by name
+- `allCompanies(customerId: "slug")` returns [] if slug is wrong — use `companies` with search instead
